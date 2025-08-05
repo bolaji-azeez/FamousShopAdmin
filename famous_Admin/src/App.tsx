@@ -1,19 +1,33 @@
-// App.tsx
+// src/App.tsx
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import EditProduct from './pages/Product/EditProductForm';
-import ProductList from './pages/Product/AllPoductPage';
-
-// Import other components...
+import { AuthProvider } from './context/AuthContext';
+import ProtectedRoute from './component/ProtectedRoutes';
+import AdminLogin from './pages/auth/login';
+import AdminDashboard from './pages/Dashboard';
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/admin/products" element={<ProductList />} />
-        <Route path="/productsEdits" element={<EditProduct/>} />
-        {/* Add other routes */}
-      </Routes>
-    </BrowserRouter>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* Public routes */}
+          <Route path="/admin/login" element={<AdminLogin />} />
+          
+          {/* Protected routes */}
+          <Route 
+            path="/admin/dashboard" 
+            element={
+              <ProtectedRoute>
+                <AdminDashboard />
+              </ProtectedRoute>
+            } 
+          />
+          
+          {/* Catch-all redirect */}
+          <Route path="*" element={<Navigate to="/admin/login" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 

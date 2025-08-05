@@ -1,34 +1,34 @@
-"use client"
+"use client";
 
-import { Eye, Mail } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-
-const mockCustomers = [
-  {
-    id: "CUST-001",
-    name: "John Doe",
-    email: "john@example.com",
-    orders: 5,
-    totalSpent: "$15,200",
-    status: "active",
-    joinDate: "2024-01-10",
-  },
-  {
-    id: "CUST-002",
-    name: "Jane Smith",
-    email: "jane@example.com",
-    orders: 3,
-    totalSpent: "$8,400",
-    status: "active",
-    joinDate: "2024-01-08",
-  },
-]
+import React, { useEffect } from "react";
+import { Eye, Mail } from "lucide-react";
+import { useAppDispatch, useAppSelector } from "@/hooks/hooks";
+import { fetchUsers } from "@/features/users/usersSlice"; // adjust path if needed
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export default function CustomersPage() {
+  const dispatch = useAppDispatch();
+  const users = useAppSelector((state) => state.users.users);
+  const status = useAppSelector((state) => state.users.status);
+  const error = useAppSelector((state) => state.users.error);
+
+  useEffect(() => {
+    if (status === "idle") {
+      dispatch(fetchUsers());
+    }
+  }, [status, dispatch]);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -44,6 +44,9 @@ export default function CustomersPage() {
         <Input placeholder="Search customers..." className="w-full sm:max-w-sm" />
       </div>
 
+      {status === "loading" && <p>Loading customers...</p>}
+      {error && <p className="text-red-500">Error: {error}</p>}
+
       {/* Desktop Table */}
       <Card className="hidden md:block overflow-x-auto p-3">
         <Table className="min-w-full">
@@ -52,27 +55,25 @@ export default function CustomersPage() {
               <TableHead>Customer ID</TableHead>
               <TableHead>Name</TableHead>
               <TableHead>Email</TableHead>
-              <TableHead>Orders</TableHead>
-              <TableHead>Total Spent</TableHead>
+              <TableHead>Role</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Join Date</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {mockCustomers.map((customer) => (
-              <TableRow key={customer.id}>
-                <TableCell className="font-medium">{customer.id}</TableCell>
-                <TableCell>{customer.name}</TableCell>
-                <TableCell>{customer.email}</TableCell>
-                <TableCell>{customer.orders}</TableCell>
-                <TableCell>{customer.totalSpent}</TableCell>
+            {users.map((user) => (
+              <TableRow key={user.id}>
+                <TableCell className="font-medium">{user.id}</TableCell>
+                <TableCell>{user.name}</TableCell>
+                <TableCell>{user.email}</TableCell>
+                <TableCell>{user.role}</TableCell>
                 <TableCell>
-                  <Badge variant={customer.status === "active" ? "default" : "secondary"}>
-                    {customer.status}
+                  <Badge variant={user.isActive ? "default" : "secondary"}>
+                    {user.isActive ? "Active" : "Inactive"}
                   </Badge>
                 </TableCell>
-                <TableCell>{customer.joinDate}</TableCell>
+                <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
                 <TableCell>
                   <div className="flex items-center space-x-2">
                     <Button variant="outline" size="sm">
@@ -89,20 +90,21 @@ export default function CustomersPage() {
         </Table>
       </Card>
 
-      {/* Mobile Card Layout */}
+      {/* Mobile View */}
       <div className="grid gap-4 md:hidden">
-        {mockCustomers.map((customer) => (
-          <Card key={customer.id} className="p-4 space-y-2">
+        {users.map((user) => (
+          <Card key={user.id} className="p-4 space-y-2">
             <div className="flex justify-between items-center">
-              <p className="text-sm font-medium">{customer.name}</p>
-              <Badge variant={customer.status === "active" ? "default" : "secondary"}>
-                {customer.status}
+              <p className="text-sm font-medium">{user.name}</p>
+              <Badge variant={user.isActive ? "default" : "secondary"}>
+                {user.isActive ? "Active" : "Inactive"}
               </Badge>
             </div>
-            <p className="text-sm text-muted-foreground">{customer.email}</p>
-            <p className="text-sm">Orders: {customer.orders}</p>
-            <p className="text-sm">Total Spent: {customer.totalSpent}</p>
-            <p className="text-xs text-muted-foreground">Joined: {customer.joinDate}</p>
+            <p className="text-sm text-muted-foreground">{user.email}</p>
+            <p className="text-sm">Role: {user.role}</p>
+            <p className="text-xs text-muted-foreground">
+              Joined: {new Date(user.createdAt).toLocaleDateString()}
+            </p>
             <div className="flex gap-2">
               <Button variant="outline" size="sm">
                 <Eye className="h-4 w-4" />
@@ -115,5 +117,5 @@ export default function CustomersPage() {
         ))}
       </div>
     </div>
-  )
+  );
 }

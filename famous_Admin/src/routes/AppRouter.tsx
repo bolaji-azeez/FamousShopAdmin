@@ -14,6 +14,7 @@ import CustomersPage from "@/pages/Customers/Customers";
 import SettingsPage from "@/pages/Settings/Settings";
 import type { RouteObject } from "react-router-dom";
 
+
 //
 
 const routes: RouteObject[] = [

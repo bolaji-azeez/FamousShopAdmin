@@ -52,17 +52,7 @@ export default function BrandsPage() {
                 <Label htmlFor="brandName">Brand Name</Label>
                 <Input id="brandName" placeholder="Enter brand name" />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="brandDescription">Description</Label>
-                <Textarea id="brandDescription" placeholder="Enter brand description" />
-              </div>
-              <div className="space-y-2">
-                <Label>Brand Logo</Label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                  <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                  <p className="mt-2 text-sm text-gray-600">Upload brand logo</p>
-                </div>
-              </div>
+              
             </div>
             <DialogFooter>
               <Button type="submit">Create Brand</Button>

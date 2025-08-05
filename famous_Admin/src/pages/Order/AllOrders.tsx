@@ -1,6 +1,9 @@
 "use client";
 
 import * as React from "react";
+import { useAppDispatch, useAppSelector } from "../../hooks/hooks";
+import { fetchOrders, updateOrderStatus } from "../../features/order/orderSlice";
+import { useEffect, useState } from "react";
 import { Check, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -23,61 +26,30 @@ import {
 } from "@/components/ui/table";
 import { OrderDetailModal } from "./OrderModal";
 
-const mockOrders = [
-  {
-    id: "ORD-001",
-    customer: "John Doe",
-    product: "Rolex Submariner",
-    amount: "$8,500",
-    status: "pending",
-    date: "2024-01-15",
-  },
-  {
-    id: "ORD-002",
-    customer: "Jane Smith",
-    product: "Omega Speedmaster",
-    amount: "$4,200",
-    status: "confirmed",
-    date: "2024-01-14",
-  },
-  {
-    id: "ORD-003",
-    customer: "Mike Johnson",
-    product: "TAG Heuer Carrera",
-    amount: "$2,800",
-    status: "delivered",
-    date: "2024-01-13",
-  },
-];
-
 export default function OrdersPage() {
-  const [orders, setOrders] = React.useState(mockOrders);
-  const [selectedOrderId, setSelectedOrderId] = React.useState(null)
-  const [isModalOpen, setIsModalOpen] = React.useState(false)
+  const dispatch = useAppDispatch();
+  const orders = useAppSelector((state) => state.orders.items);
+  const status = useAppSelector((state) => state.orders.status);
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const updateOrderStatus = (orderId: string, newStatus: string) => {
-    setOrders(
-      orders.map((order) =>
-        order.id === orderId ? { ...order, status: newStatus } : order
-      )
-    );
+  useEffect(() => {
+    dispatch(fetchOrders());
+  }, [dispatch]);
+
+  const handleViewOrder = (orderId: string) => {
+    setSelectedOrderId(orderId);
+    setIsModalOpen(true);
   };
 
-   const handleViewOrder = (orderId) => {
-    setSelectedOrderId(orderId)
-    setIsModalOpen(true)
-  }
-
   const handleCloseModal = () => {
-    setIsModalOpen(false)
-    setSelectedOrderId(null)
-  }
-  
-  const handleStatusUpdate = (orderId, newStatus) => {
-    updateOrderStatus(orderId, newStatus)
-  }
+    setIsModalOpen(false);
+    setSelectedOrderId(null);
+  };
 
-
+  const handleStatusUpdate = (orderId: string, newStatus: string) => {
+    dispatch(updateOrderStatus({ orderId, newStatus: newStatus as any }));
+  };
 
   return (
     <div className="space-y-6">
@@ -166,7 +138,10 @@ export default function OrdersPage() {
                         Deliver
                       </Button>
                     )}
-                    <Button variant="outline" size="sm" onClick={() => handleViewOrder(order.id)}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleViewOrder(order.id)}>
                       <Eye className="h-4 w-4" />
                     </Button>
                   </div>
@@ -213,7 +188,10 @@ export default function OrdersPage() {
                   Deliver
                 </Button>
               )}
-              <Button variant="outline" size="sm" onClick={() => handleViewOrder(order.id)}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleViewOrder(order.id)}>
                 <Eye className="h-4 w-4" />
               </Button>
             </div>
@@ -222,11 +200,10 @@ export default function OrdersPage() {
       </div>
 
       <OrderDetailModal
-      isOpen={isModalOpen}
-      onClose={handleCloseModal}
-      orderId={selectedOrderId}
-      onStatusUpdate={handleStatusUpdate}
-      
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        orderId={selectedOrderId}
+        onStatusUpdate={handleStatusUpdate}
       />
     </div>
   );

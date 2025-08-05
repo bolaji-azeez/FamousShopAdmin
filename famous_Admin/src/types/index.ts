@@ -24,5 +24,24 @@ export type ProductTableItem = Pick<
 };
 
 
+export interface ApiResponse<T> {
+  data: T
+  message?: string
+  success: boolean
+}
+
+export interface Brand {
+  id: string;
+  name: string;
+}
+
+export interface OrdersState {
+  items: Order[];
+  selectedOrder: Order | null;
+  status: "idle" | "loading" | "succeeded" | "failed";
+  error: string | null;
+  page: number;
+  totalPages: number;
+}
 
 

@@ -7,7 +7,7 @@ import { ThemeProvider } from "@/theme-context";
 import { FiMenu } from "react-icons/fi";
 import { Outlet } from "react-router-dom";
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default function DashboardLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
