@@ -14,7 +14,7 @@ export default function CreateProductPage() {
       .unwrap()
       .then(() => {
         toast.success("Product created successfully!");
-        navigate("/admin/products");
+        navigate("/products");
       })
       .catch((err) => {
         toast.error(`Failed to create product: ${err}`);
@@ -22,7 +22,7 @@ export default function CreateProductPage() {
   };
 
   const handleCancel = () => {
-    navigate("/admin/products");
+    navigate("/products");
   };
 
   return (

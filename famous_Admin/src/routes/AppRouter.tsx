@@ -12,35 +12,41 @@ import LandingPage from "@/pages/Landing/Landing";
 import { createBrowserRouter } from "react-router-dom";
 import CustomersPage from "@/pages/Customers/Customers";
 import SettingsPage from "@/pages/Settings/Settings";
+
 import type { RouteObject } from "react-router-dom";
+import AdminLogin from "@/pages/auth/login";
 
 
 //
 
 const routes: RouteObject[] = [
   {
-    path: "/",
+    path: "/admin/dashboard/",
     element: <Layout />,
     children: [
-      { index: true, element: <Dashboard /> },
+    { index: true, element: <Dashboard /> },
+      // {
+      //   path: "/admin/dashboard",
+      //   element: <Dashboard />
+      // },
       {
-        path: "/admin/settings",
+        path: "settings",
         element: <SettingsPage />
       },
       {
-        path: "/admin/products",
+        path: "products",
         element: <ProductsPage />,
       },
       {
-        path: "/admin/product/create",
+        path: "product/create",
         element: <CreateProductPage />
       },
         {
-        path: "/admin/products/:id/edit",
+        path: "products/:id/edit",
         element: <EditProductPage />
       },
       {
-        path: "/admin/orders",
+        path: "orders",
         element: <AllOrders />,
       },
       {
@@ -57,20 +63,25 @@ const routes: RouteObject[] = [
         element: <Trending />,
       },
       {
-        path: "/admin/brands",
+        path: "brands",
         element: <BrandsPage />,
       },
 
       {
-        path: "/admin/landing",
+        path: "landing",
         element: <LandingPage />,
       },
         {
-        path: "/admin/customers",
+        path: "customers",
         element: <CustomersPage />,
       },
+      
     ],
   },
+  {
+    path: "/",
+    element: <AdminLogin />,
+  }
 ];
 
 export const router = createBrowserRouter(routes);

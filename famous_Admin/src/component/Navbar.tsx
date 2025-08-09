@@ -7,7 +7,7 @@ import { useTheme } from "../theme-context";
 
 export default function Navbar() {
   const { theme, toggleTheme } = useTheme();
-  const adminName = "John Doe"; // Replace with dynamic admin name
+  const adminName = localStorage.getItem("admin_name") || "Admin"; // Replace with dynamic admin name
 
   const [hasNotification, setHasNotification] = useState(true);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -56,8 +56,7 @@ export default function Navbar() {
           variant="ghost"
           size="icon"
           onClick={toggleTheme}
-          className="hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-800 dark:text-gray-300"
-        >
+          className="hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-800 dark:text-gray-300">
           {theme === "dark" ? (
             <Sun className="h-5 w-5" />
           ) : (
@@ -75,8 +74,7 @@ export default function Navbar() {
             onClick={() => {
               setShowNotifications((prev) => !prev);
               setHasNotification(false);
-            }}
-          >
+            }}>
             <Bell className="h-5 w-5" />
             <span className="sr-only">Notifications</span>
             {hasNotification && (
@@ -95,8 +93,7 @@ export default function Navbar() {
                   notifications.map((note) => (
                     <li
                       key={note.id}
-                      className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
-                    >
+                      className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">
                       {note.message}
                     </li>
                   ))

@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Eye, Mail } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@/hooks/hooks";
-import { fetchUsers } from "@/features/users/usersSlice"; // adjust path if needed
+import { useAppDispatch } from "@/hooks/hooks";
+import { fetchUsers } from "@/features/users/usersSlice";
+import { useGetUsersQuery } from "@/features/users/userApi"; 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -19,15 +20,29 @@ import {
 
 export default function CustomersPage() {
   const dispatch = useAppDispatch();
-  const users = useAppSelector((state) => state.users.users);
-  const status = useAppSelector((state) => state.users.status);
-  const error = useAppSelector((state) => state.users.error);
+  const { data: users = [], error, status } = useGetUsersQuery();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [dateFilter, setDateFilter] = useState("");
+
 
   useEffect(() => {
     if (status === "idle") {
       dispatch(fetchUsers());
     }
   }, [status, dispatch]);
+
+  const filteredUsers = users.filter((user) => {
+  
+    const nameMatch = user.fullName.toLowerCase().includes(searchTerm.toLowerCase());
+  
+    let dateMatch = true;
+    if (dateFilter) {
+      const userDate = new Date(user.createdAt).toISOString().split('T')[0];
+      dateMatch = userDate === dateFilter;
+    }
+    
+    return nameMatch && dateMatch;
+  });
 
   return (
     <div className="space-y-6">
@@ -40,12 +55,22 @@ export default function CustomersPage() {
       </div>
 
       {/* Search Input */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-        <Input placeholder="Search customers..." className="w-full sm:max-w-sm" />
+       <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+        <Input 
+          placeholder="Search customers by name..." 
+          className="w-full sm:max-w-sm" 
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+        <Input
+          type="date"
+          className="w-2xs sm:max-w-sm"
+          value={dateFilter}
+          onChange={(e) => setDateFilter(e.target.value)}
+        />
       </div>
 
-      {status === "loading" && <p>Loading customers...</p>}
-      {error && <p className="text-red-500">Error: {error}</p>}
+      
 
       {/* Desktop Table */}
       <Card className="hidden md:block overflow-x-auto p-3">
@@ -62,10 +87,10 @@ export default function CustomersPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {users.map((user) => (
-              <TableRow key={user.id}>
-                <TableCell className="font-medium">{user.id}</TableCell>
-                <TableCell>{user.name}</TableCell>
+            {filteredUsers.map((user) => (
+              <TableRow key={user._id}>
+                <TableCell className="font-medium">{user._id}</TableCell>
+                <TableCell>{user.fullName}</TableCell>
                 <TableCell>{user.email}</TableCell>
                 <TableCell>{user.role}</TableCell>
                 <TableCell>
@@ -92,10 +117,10 @@ export default function CustomersPage() {
 
       {/* Mobile View */}
       <div className="grid gap-4 md:hidden">
-        {users.map((user) => (
-          <Card key={user.id} className="p-4 space-y-2">
+        {filteredUsers.map((user) => (
+          <Card key={user._id} className="p-4 space-y-2">
             <div className="flex justify-between items-center">
-              <p className="text-sm font-medium">{user.name}</p>
+              <p className="text-sm font-medium">{user.fullName}</p>
               <Badge variant={user.isActive ? "default" : "secondary"}>
                 {user.isActive ? "Active" : "Inactive"}
               </Badge>

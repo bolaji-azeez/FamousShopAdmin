@@ -8,9 +8,9 @@ import {
 import api from "@/lib/axios"; 
 
 // Types
-interface User {
+export interface User {
   id: string;
-  name: string;
+  fullName: string;
   email: string;
   role: "user" | "admin";
   createdAt: string;

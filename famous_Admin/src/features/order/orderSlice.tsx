@@ -14,12 +14,6 @@ export interface Order {
   date: string;
 }
 
-const initialState: OrdersState = {
-  items: [],
-  status: "idle",
-  error: null,
-};
-
 interface OrdersState {
   items: Order[];
   selectedOrder: Order | null;
@@ -29,34 +23,76 @@ interface OrdersState {
   totalPages: number;
 }
 
-export const fetchOrders = createAsyncThunk("orders/fetchAll", async () => {
-  const res = await apiClient.get("/api/orders");
-  return res.data;
+const initialState: OrdersState = {
+  items: [],
+  selectedOrder: null,
+  status: "idle",
+  error: null,
+  page: 1,
+  totalPages: 1,
+};
+
+// Fetch all orders (Admin)
+export const fetchOrders = createAsyncThunk<
+  { orders: Order[]; totalPages: number },
+  number, // page number
+  { rejectValue: string }
+>("orders/fetchAll", async (page = 1, { rejectWithValue }) => {
+  try {
+    const token = JSON.parse(localStorage.getItem("user") || "{}")?.token;
+    const res = await apiClient.get(`/orders?page=${page}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return { orders: res.data.orders, totalPages: res.data.totalPages };
+  } catch (err: any) {
+    return rejectWithValue(
+      err.response?.data?.message || "Failed to fetch orders"
+    );
+  }
 });
 
+// Update order status
 export const updateOrderStatus = createAsyncThunk<
   Order,
-  { orderId: string; newStatus: Order["status"] }
->("orders/updateStatus", async ({ orderId, newStatus }) => {
-  const res = await apiClient.patch(`/orders/${orderId}/status`, {
-    status: newStatus,
-  });
-  return res.data;
-});
-
-export const fetchOrderById = createAsyncThunk<Order, string>(
-  "orders/fetchById",
-  async (orderId, { rejectWithValue }) => {
+  { orderId: string; newStatus: Order["status"] },
+  { rejectValue: string }
+>(
+  "orders/updateStatus",
+  async ({ orderId, newStatus }, { rejectWithValue }) => {
     try {
-      const res = await apiClient.get(`/orders/${orderId}`);
+      const token = JSON.parse(localStorage.getItem("user") || "{}")?.token;
+      const res = await apiClient.put(
+        `/orders/${orderId}/status`,
+        { status: newStatus },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
       return res.data;
     } catch (err: any) {
       return rejectWithValue(
-        err.response?.data?.message || "Failed to load order"
+        err.response?.data?.message || "Failed to update order status"
       );
     }
   }
 );
+
+// Fetch single order by ID
+export const fetchOrderById = createAsyncThunk<
+  Order,
+  string,
+  { rejectValue: string }
+>("orders/fetchById", async (orderId, { rejectWithValue }) => {
+  try {
+    const token = JSON.parse(localStorage.getItem("user") || "{}")?.token;
+    const res = await apiClient.get(`/orders/${orderId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data;
+  } catch (err: any) {
+    return rejectWithValue(
+      err.response?.data?.message || "Failed to load order"
+    );
+  }
+});
 
 const ordersSlice = createSlice({
   name: "orders",
@@ -64,20 +100,27 @@ const ordersSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder
+      // Fetch orders
       .addCase(fetchOrders.pending, (state) => {
         state.status = "loading";
+        state.error = null;
       })
       .addCase(
         fetchOrders.fulfilled,
-        (state, action: PayloadAction<Order[]>) => {
+        (
+          state,
+          action: PayloadAction<{ orders: Order[]; totalPages: number }>
+        ) => {
           state.status = "succeeded";
-          state.items = action.payload;
+          state.items = action.payload.orders;
+          state.totalPages = action.payload.totalPages;
         }
       )
       .addCase(fetchOrders.rejected, (state, action) => {
         state.status = "failed";
-        state.error = action.error.message || "Failed to load orders";
+        state.error = action.payload || "Failed to load orders";
       })
+      // Update order status
       .addCase(
         updateOrderStatus.fulfilled,
         (state, action: PayloadAction<Order>) => {
@@ -86,8 +129,18 @@ const ordersSlice = createSlice({
           if (index !== -1) state.items[index] = updated;
         }
       )
-      .addCase(fetchOrderById.fulfilled, (state, action) => {
-        state.selectedOrder = action.payload;
+      .addCase(updateOrderStatus.rejected, (state, action) => {
+        state.error = action.payload || "Failed to update order status";
+      })
+      // Fetch single order
+      .addCase(
+        fetchOrderById.fulfilled,
+        (state, action: PayloadAction<Order>) => {
+          state.selectedOrder = action.payload;
+        }
+      )
+      .addCase(fetchOrderById.rejected, (state, action) => {
+        state.error = action.payload || "Failed to load order";
       });
   },
 });
