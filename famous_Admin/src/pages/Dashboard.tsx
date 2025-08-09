@@ -96,7 +96,7 @@ export default function AdminDashboard() {
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Orders</CardTitle>
             <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
-              <ShoppingCart className="h-4 w-4 text-blue-600" />
+              <ShoppingCart className="h-4 w-4 text-[#0b163f]" />
             </div>
           </CardHeader>
           <CardContent>
