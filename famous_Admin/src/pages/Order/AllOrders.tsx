@@ -1,9 +1,12 @@
 "use client";
 
+import {
+  useGetOrdersQuery,
+  useUpdateOrderStatusMutation,
+} from "@/features/order/orderApi";
+
 import * as React from "react";
-import { useAppDispatch, useAppSelector } from "../../hooks/hooks";
-import { fetchOrders, updateOrderStatus } from "../../features/order/orderSlice";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Check, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -27,15 +30,12 @@ import {
 import { OrderDetailModal } from "./OrderModal";
 
 export default function OrdersPage() {
-  const dispatch = useAppDispatch();
-  const orders = useAppSelector((state) => state.orders.items);
-  const status = useAppSelector((state) => state.orders.status);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const { data: ordersData = [], isLoading, isError } = useGetOrdersQuery();
+  console.log("ordersData:", ordersData);
 
-  useEffect(() => {
-    dispatch(fetchOrders());
-  }, [dispatch]);
+  const [updateOrderStatus] = useUpdateOrderStatusMutation(); // RTK Query mutation
 
   const handleViewOrder = (orderId: string) => {
     setSelectedOrderId(orderId);
@@ -47,9 +47,26 @@ export default function OrdersPage() {
     setSelectedOrderId(null);
   };
 
-  const handleStatusUpdate = (orderId: string, newStatus: string) => {
-    dispatch(updateOrderStatus({ orderId, newStatus: newStatus as any }));
+  const handleStatusUpdate = async (orderId: string, status: string) => {
+    await updateOrderStatus({ orderId, status });
+    handleCloseModal();
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <span>Loading orders...</span>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="flex justify-center items-center h-64 text-red-500">
+        <span>Failed to load orders. Please try again.</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -97,14 +114,19 @@ export default function OrdersPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {orders.map((order) => (
-              <TableRow key={order.id}>
+            {ordersData.map((order) => (
+              <TableRow key={order._id}>
                 <TableCell className="font-medium whitespace-nowrap">
-                  {order.id}
+                  {order._id}
                 </TableCell>
-                <TableCell>{order.customer}</TableCell>
-                <TableCell>{order.product}</TableCell>
-                <TableCell>{order.amount}</TableCell>
+                <TableCell>{order.userId?.fullName}</TableCell>
+                <TableCell>
+                  {" "}
+                  {order.products && order.products.length > 0
+                    ? `${order.products[0].quantity} x ${order.products[0].price}`
+                    : "—"}
+                </TableCell>
+                <TableCell>{order.totalPrice}</TableCell>
                 <TableCell>
                   <Badge
                     variant={
@@ -114,17 +136,22 @@ export default function OrdersPage() {
                         ? "secondary"
                         : "outline"
                     }>
-                    {order.status}
+                    {order.status || "pending"}
                   </Badge>
                 </TableCell>
-                <TableCell>{order.date}</TableCell>
+                <TableCell>
+                  {new Date(order.createdAt).toLocaleDateString()}
+                </TableCell>
                 <TableCell>
                   <div className="flex items-center space-x-2">
                     {order.status === "pending" && (
                       <Button
                         size="sm"
                         onClick={() =>
-                          updateOrderStatus(order.id, "confirmed")
+                          updateOrderStatus({
+                            orderId: order._id,
+                            status: "confirmed",
+                          })
                         }>
                         <Check className="h-4 w-4" />
                       </Button>
@@ -133,7 +160,10 @@ export default function OrdersPage() {
                       <Button
                         size="sm"
                         onClick={() =>
-                          updateOrderStatus(order.id, "delivered")
+                          updateOrderStatus({
+                            orderId: order._id,
+                            status: "delivered",
+                          })
                         }>
                         Deliver
                       </Button>
@@ -141,7 +171,7 @@ export default function OrdersPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleViewOrder(order.id)}>
+                      onClick={() => handleViewOrder(order._id)}>
                       <Eye className="h-4 w-4" />
                     </Button>
                   </div>
@@ -154,10 +184,10 @@ export default function OrdersPage() {
 
       {/* Mobile Cards */}
       <div className="grid gap-4 md:hidden">
-        {orders.map((order) => (
-          <Card key={order.id} className="p-4 space-y-2">
+        {ordersData.map((order) => (
+          <Card key={order._id} className="p-4 space-y-2">
             <div className="flex justify-between items-center">
-              <p className="text-sm font-medium">{order.id}</p>
+              <p className="text-sm font-medium">{order._id}</p>
               <Badge
                 variant={
                   order.status === "delivered"
@@ -169,31 +199,35 @@ export default function OrdersPage() {
                 {order.status}
               </Badge>
             </div>
-            <p className="text-sm text-muted-foreground">{order.customer}</p>
-            <p className="text-sm">{order.product}</p>
-            <p className="text-sm font-semibold">{order.amount}</p>
-            <p className="text-xs text-muted-foreground">{order.date}</p>
+            <p className="text-sm text-muted-foreground font-bold">
+              {order.userId?.fullName}
+            </p>
+            <p className="text-sm">
+              {" "}
+              {order.products && order.products.length > 0
+                ? `${order.products[0].quantity} x ${order.products[0].price}`
+                : "—"}
+            </p>
+            <p className="text-sm font-semibold">{order.totalPrice}</p>
+            <p className="text-xs text-muted-foreground">
+              {" "}
+              {new Date(order.createdAt).toLocaleDateString()}
+            </p>
             <div className="flex gap-2">
               {order.status === "pending" && (
                 <Button
                   size="sm"
-                  onClick={() => updateOrderStatus(order.id, "confirmed")}>
+                  onClick={() => handleStatusUpdate(order._id, "confirmed")}>
                   <Check className="h-4 w-4" />
                 </Button>
               )}
               {order.status === "confirmed" && (
                 <Button
                   size="sm"
-                  onClick={() => updateOrderStatus(order.id, "delivered")}>
+                  onClick={() => handleStatusUpdate(order._id, "delivered")}>
                   Deliver
                 </Button>
               )}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleViewOrder(order.id)}>
-                <Eye className="h-4 w-4" />
-              </Button>
             </div>
           </Card>
         ))}
@@ -203,7 +237,6 @@ export default function OrdersPage() {
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         orderId={selectedOrderId}
-        onStatusUpdate={handleStatusUpdate}
       />
     </div>
   );

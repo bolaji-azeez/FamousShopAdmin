@@ -68,3 +68,130 @@ export interface User {
   isActive: boolean;
   avatar?: string;
 }
+
+export interface Notification {
+  id: string;
+  message: string;
+  type: "info" | "success" | "error";
+  createdAt: string;
+}
+
+export interface Order {
+  _id: string;
+  userId: {
+    _id: string;
+    fullName: string;
+    email: string;
+    items: Array<{
+      productId: string;
+      quantity: number;
+      price: number;
+      image: string;
+      _id: string;
+      name: string;
+      brand: string;
+    }>;
+  };
+  totalQuantity: number;
+  totalPrice: number;
+  orderId: number;
+  products: Array<{
+    productId: string | null;
+    price: number;
+    quantity: number;
+    _id: string;
+  }>;
+  createdAt: string;
+  updatedAt: string;
+  status: string;
+  shippingAddress: {
+    address: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    street: string;
+    country: string;
+  };
+  payment: {
+    method: string;
+    status: string;
+  };
+  paymentMethod: string;
+  customer: {
+    fullName: string;
+    email: string;
+    phone: string;
+  };
+  shipping: {
+    method: string;
+    cost: number;
+    trackingNumber: string;
+    carrier: string;
+    estimatedDelivery: string;
+  };
+  totals: {
+    subtotal: number;
+    tax: number;
+    shipping: number;
+    total: number;
+  };
+  __v: number;
+  items: Array<{
+    productId: string;
+    quantity: number;
+    price: number;
+    image: string;
+    id: string;
+    name: string;
+    brand: string;
+    total: number;
+  }>;
+  timeline: Array<{
+    status: string;
+    date: string;
+  }>;
+  paymentStatus: string;
+  paymentId: string;
+  paymentDetails: {
+    transactionId: string;
+    method: string;
+    status: string;
+  };
+
+  carrier: string;
+  estimatedDelivery: string;
+
+  
+
+  
+
+ 
+}
+
+export interface OrderTableItem {
+  _id: string;
+  customer: string;
+  product: string;
+  amount: string;
+  status: "pending" | "confirmed" | "delivered";
+  date: string;
+}
+
+export interface changePasswordData {
+  currentPassword: string;
+  newPassword: string;
+}
+
+export interface DashboardData {
+  totalUser: number;
+  totalProducts: number;
+  totalOrders: number;
+  monthlySalesData: {
+    _id: number;
+    totalSales: number;
+  }[];
+  salesOverview: {
+    month: string;
+    sales: number;
+  }[];
+}

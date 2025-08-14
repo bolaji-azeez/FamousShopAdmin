@@ -94,6 +94,24 @@ export const fetchOrderById = createAsyncThunk<
   }
 });
 
+export const orderDetails = createAsyncThunk<
+  Order,
+  string,
+  { rejectValue: string }
+>("orders/fetchDetails", async (orderId, { rejectWithValue }) => {
+  try {
+    const token = JSON.parse(localStorage.getItem("user") || "{}")?.token;
+    const res = await apiClient.get(`/orders/${orderId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data;
+  } catch (err: any) {
+    return rejectWithValue(
+      err.response?.data?.message || "Failed to load order details"
+    );
+  }
+});
+
 const ordersSlice = createSlice({
   name: "orders",
   initialState,
@@ -141,7 +159,18 @@ const ordersSlice = createSlice({
       )
       .addCase(fetchOrderById.rejected, (state, action) => {
         state.error = action.payload || "Failed to load order";
+      })
+      // Fetch order details
+      .addCase(
+        orderDetails.fulfilled,
+        (state, action: PayloadAction<Order>) => {
+          state.selectedOrder = action.payload;
+        }
+      )
+      .addCase(orderDetails.rejected, (state, action) => {
+        state.error = action.payload || "Failed to load order details";
       });
+    // Reset selected order on logout
   },
 });
 

@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { Moon, Sun, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "../theme-context";
+import { useGetNotificationsQuery } from "@/features/notification/notficationApi";
 
 export default function Navbar() {
   const { theme, toggleTheme } = useTheme();
@@ -12,12 +13,9 @@ export default function Navbar() {
   const [hasNotification, setHasNotification] = useState(true);
   const [showNotifications, setShowNotifications] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
+  const { data: notifications = [] } = useGetNotificationsQuery();
 
-  const notifications = [
-    { id: 1, message: "New order received from Jane Doe." },
-    { id: 2, message: "Product stock running low on Rolex Submariner." },
-    { id: 3, message: "New customer registered: John Smith." },
-  ];
+  
 
   // Close the notification panel when clicking outside
   useEffect(() => {

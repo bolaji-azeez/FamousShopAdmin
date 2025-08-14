@@ -18,7 +18,15 @@ import {
 } from "@/components/ui/card";
 import { salesData } from "../../data/chatdata";
 
-export function SalesOverviewChart() {
+
+interface SalesOverviewChartProps {
+  data: {
+    month: string;
+    sales: number;
+  }[];
+}
+
+export const SalesOverviewChart = ({ data }: SalesOverviewChartProps) => {
   return (
     <Card className="col-span-4">
       <CardHeader>
