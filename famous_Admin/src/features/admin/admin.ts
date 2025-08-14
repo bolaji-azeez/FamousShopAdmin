@@ -1,17 +1,42 @@
-// import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query";
+// src/features/auth/authApi.ts
+import { useAppDispatch, useAppSelector } from "@/hooks/hooks";
+import { changeAdminPassword, fetchDashboardOverview } from "./adminAuthSlice";
 
-// export const adminApi = createApi({
-//     reducerPath: "adminApi",
-//     baseQuery: fetchBaseQuery({
-//         baseUrl: import.meta.env.VITE_APP_API_BASE_URL,
-//         prepareHeaders: (headers, { getState }) => {
-//         const token = getState().adminAuth.token; // Adjust based on your auth state
-//         if (token) {
-//             headers.set("Authorization", `Bearer ${token}`);
-//         }
-//         return headers;
-//         },
-//     }),
-//     endpoints: (builder) => ({
-//     )
-// });
+export const useDashboardData = () => {
+  const dispatch = useAppDispatch();
+  const { dashboardData, status, error } = useAppSelector(
+    (state) => state.adminAuth
+  );
+
+  const getDashboardData = () => {
+    dispatch(fetchDashboardOverview());
+  };
+
+  return {
+    dashboardData,
+    isLoading: status === "loading",
+    error,
+    getDashboardData,
+  };
+};
+
+export const useChangePassword = () => {
+  const dispatch = useAppDispatch();
+  const { status, error } = useAppSelector((state) => state.adminAuth);
+
+  const changePassword = async (
+    currentPassword: string,
+    newPassword: string
+  ) => {
+    const result = await dispatch(
+      changeAdminPassword({ currentPassword, newPassword })
+    );
+    return result;
+  };
+
+  return {
+    changePassword,
+    isLoading: status === "loading",
+    error,
+  };
+};

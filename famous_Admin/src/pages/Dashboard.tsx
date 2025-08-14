@@ -1,76 +1,95 @@
 
 
-import { ShoppingCart, Package, Users, DollarSign, TrendingUp, Eye } from "lucide-react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { SalesOverviewChart } from "../component/Chart/SalesOverviewChart"
-import { CategoryChart } from "../component/Chart/categoryChart"
-import { TopBuyersChart } from "../component/Chart/topChartBuyer"
-import { RevenueByBrandChart } from "../component/Chart/RevenueByBrandChart"
+import {
+  ShoppingCart,
+  Package,
+  Users,
+  DollarSign,
+  TrendingUp,
+  Eye,
+} from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
+import { useNavigate } from "react-router-dom";
 
-// Mock data
-const mockOrders = [
-  {
-    id: "ORD-001",
-    customer: "John Doe",
-    product: "Rolex Submariner",
-    amount: "$8,500",
-    status: "pending",
-    date: "2024-01-15",
-  },
-  {
-    id: "ORD-002",
-    customer: "Jane Smith",
-    product: "Omega Speedmaster",
-    amount: "$4,200",
-    status: "confirmed",
-    date: "2024-01-14",
-  },
-  {
-    id: "ORD-003",
-    customer: "Sarah Wilson",
-    product: "TAG Heuer Carrera",
-    amount: "$2,800",
-    status: "delivered",
-    date: "2024-01-13",
-  },
-]
+// Import your custom hook
+import { useDashboardData } from "@/hooks/useDashboardData"; // Hook lives here now
+import { fetchDashboardOverview } from "@/features/admin/adminAuthSlice";
+import { SalesOverviewChart } from "../component/Chart/SalesOverviewChart";
+import { CategoryChart } from "../component/Chart/categoryChart"; // Ensure this import path is correct
+import { useAppDispatch } from "@/hooks/hooks";
 
-const mockProducts = [
-  {
-    id: "PROD-001",
-    name: "Rolex Submariner",
-    brand: "Rolex",
-    price: 8500,
-    images: ["/placeholder.svg?height=200&width=200"],
-    sales: 45,
-  },
-  {
-    id: "PROD-002",
-    name: "Omega Speedmaster",
-    brand: "Omega",
-    price: 4200,
-    images: ["/placeholder.svg?height=200&width=200"],
-    sales: 32,
-  },
-  {
-    id: "PROD-003",
-    name: "TAG Heuer Carrera",
-    brand: "TAG Heuer",
-    price: 2800,
-    images: ["/placeholder.svg?height=200&width=200"],
-    sales: 28,
-  },
-]
+// Define the Chart components to accept data, and provide default empty arrays
+// This is crucial for when dashboardData is null or has empty arrays
+interface SalesOverviewChartProps {
+  salesData?: { date: string; sales: number }[];
+}
+interface CategoryChartProps {
+  salesData?: { category: string; count: number }[];
+}
 
-export default function AdminDashboard() {
-  return (
+export default function AdminDashboardPage() {
+  const dispatch = useAppDispatch(); // Get dispatch for potential retry
+ 
+
+  // Call your hook here, at the top level of the component
+  const { dashboardData, isLoading, isSucceeded, isFailed, error } =
+    useDashboardData();
+
+  // Helper to format numbers safely for display
+  const formatNumber = (
+    num: number | null | undefined,
+    fallback: string = "0"
+  ) => {
+    if (num === null || num === undefined) return fallback;
+    return num.toLocaleString();
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <p>Loading dashboard data...</p>
+      </div>
+    );
+  }
+
+  if (isFailed) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen text-red-500">
+        <p className="mb-4">
+          Error loading dashboard: {error || "Unknown error"}
+        </p>
+        <Button
+          onClick={() => dispatch(fetchDashboardOverview())}
+          className="mr-2">
+          Retry Fetch
+        </Button>
+        <Button
+          variant="outline"
+          onClick={() => navigate("/admin/dashboard")}
+          className="ml-2">
+          Go to Dashboard
+        </Button>
+      </div>
+    );
+  }
+
+  const navigate = useNavigate;
+return (
     <div className="space-y-8">
       <div>
         <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-        <p className="text-muted-foreground">Welcome back! Here's what's happening with your store today.</p>
+        <p className="text-muted-foreground">
+          Welcome back! Here's what's happening with your store today.
+        </p>
       </div>
 
       {/* Stats Cards */}
@@ -83,7 +102,9 @@ export default function AdminDashboard() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$89,231</div>
+            <div className="text-2xl font-bold">
+              ${formatNumber(dashboardData?.totalUser, '0')} {/* Corrected: Use actual data field */}
+            </div>
             <div className="flex items-center text-xs text-green-600 mt-1">
               <TrendingUp className="h-3 w-3 mr-1" />
               +20.1% from last month
@@ -100,7 +121,9 @@ export default function AdminDashboard() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">2,350</div>
+            <div className="text-2xl font-bold">
+              {formatNumber(dashboardData?.totalProducts, '0')} {/* Corrected: Use actual data field */}
+            </div>
             <div className="flex items-center text-xs text-blue-600 mt-1">
               <TrendingUp className="h-3 w-3 mr-1" />
               +180.1% from last month
@@ -117,7 +140,9 @@ export default function AdminDashboard() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">1,234</div>
+            <div className="text-2xl font-bold">
+              {formatNumber(dashboardData?.totalOrders, '0')} {/* Corrected: Use actual data field */}
+            </div>
             <div className="flex items-center text-xs text-purple-600 mt-1">
               <TrendingUp className="h-3 w-3 mr-1" />
               +19% from last month
@@ -134,7 +159,9 @@ export default function AdminDashboard() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">573</div>
+            <div className="text-2xl font-bold">
+              {formatNumber(dashboardData?.totalUser, '0')} {/* Corrected: Use actual data field */}
+            </div>
             <div className="flex items-center text-xs text-orange-600 mt-1">
               <TrendingUp className="h-3 w-3 mr-1" />
               +201 since last month
@@ -146,13 +173,9 @@ export default function AdminDashboard() {
 
       {/* Charts Section */}
       <div className="grid gap-4 md:grid-cols-7">
-        <SalesOverviewChart />
-        <CategoryChart />
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-7">
-        <RevenueByBrandChart />
-        <TopBuyersChart />
+        {/* Pass dynamic data safely. Ensure your Chart components handle null/empty data */}
+        <SalesOverviewChart salesData={dashboardData?.monthlySalesData} />
+        <CategoryChart salesData={dashboardData?.salesOverview} />
       </div>
 
       {/* Recent Activity */}
@@ -161,17 +184,24 @@ export default function AdminDashboard() {
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
               <CardTitle>Recent Orders</CardTitle>
-              <CardDescription>Latest customer orders and their status</CardDescription>
+              <CardDescription>
+                Latest customer orders and their status
+              </CardDescription>
             </div>
-            <Button variant="outline" size="sm">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate("/admin/orders")}> {/* Correctly call navigate */}
               <Eye className="h-4 w-4 mr-2" />
               View All
             </Button>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {mockOrders.map((order) => (
-                <div key={order.id} className="flex items-center justify-between p-3 rounded-lg border bg-muted/20">
+            {/* Render dynamically fetched recent orders, or fallback message */}
+            {dashboardData?.recentOrders && dashboardData.recentOrders.length > 0 ? (
+              // Map actual recent orders if available in dashboardData
+              dashboardData.recentOrders.slice(0, 5).map((order) => (
+                <div key={order.id} className="flex items-center justify-between p-3 rounded-lg border bg-muted/20 mb-2"> {/* Added margin bottom */}
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-medium">{order.customer}</p>
@@ -180,11 +210,10 @@ export default function AdminDashboard() {
                           order.status === "delivered"
                             ? "default"
                             : order.status === "confirmed"
-                              ? "secondary"
-                              : "outline"
+                            ? "secondary"
+                            : "outline"
                         }
-                        className="text-xs"
-                      >
+                        className="text-xs">
                         {order.status}
                       </Badge>
                     </div>
@@ -195,8 +224,11 @@ export default function AdminDashboard() {
                     <div className="text-sm font-bold">{order.amount}</div>
                   </div>
                 </div>
-              ))}
-            </div>
+              ))
+            ) : (
+              // Fallback message if no dynamic data
+              <div className="text-muted-foreground">No recent orders data available.</div>
+            )}
           </CardContent>
         </Card>
 
@@ -204,7 +236,9 @@ export default function AdminDashboard() {
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
               <CardTitle>Top Products</CardTitle>
-              <CardDescription>Best selling products this month</CardDescription>
+              <CardDescription>
+                Best selling products this month
+              </CardDescription>
             </div>
             <Button variant="outline" size="sm">
               <Eye className="h-4 w-4 mr-2" />
@@ -212,12 +246,13 @@ export default function AdminDashboard() {
             </Button>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {mockProducts.map((product, index) => (
+            {/* Render dynamically fetched top products, or fallback message */}
+            {dashboardData?.topProducts && dashboardData.topProducts.length > 0 ? (
+              // Map actual top products if available in dashboardData
+              dashboardData.topProducts.slice(0, 3).map((product, index) => (
                 <div
                   key={product.id}
-                  className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors"
-                >
+                  className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors mb-2"> {/* Added margin bottom */}
                   <div className="relative">
                     <img
                       src={product.images[0] || "/placeholder.svg"}
@@ -232,20 +267,25 @@ export default function AdminDashboard() {
                   </div>
                   <div className="flex-1 space-y-1">
                     <p className="text-sm font-medium leading-none">{product.name}</p>
-                    <p className="text-xs text-muted-foreground">{product.brand}</p>
+                    <p className="text-sm text-muted-foreground">{product.brand}</p>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold">${product.price.toLocaleString()}</span>
+                      <span className="text-xs font-bold">
+                        ${product.price.toLocaleString()}
+                      </span>
                       <Badge variant="secondary" className="text-xs">
                         {product.sales} sold
                       </Badge>
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
+              ))
+            ) : (
+              // Fallback message if no dynamic data
+              <div className="text-muted-foreground">No top products data available.</div>
+            )}
           </CardContent>
         </Card>
       </div>
     </div>
-  )
+  );
 }
