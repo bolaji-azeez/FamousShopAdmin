@@ -6,7 +6,7 @@ import {
   FiBox,
   FiShoppingCart,
   FiTag,
-  FiStar,
+  // FiStar,
   FiUser,
   FiSettings,
   FiMenu,
@@ -24,7 +24,7 @@ const Sidebar = () => {
     { path: "products", icon: FiBox, label: "Products" },
     { path: "orders", icon: FiShoppingCart, label: "Orders" },
     { path: "brands", icon: FiTag, label: "Brands" },
-    { path: "landing", icon: FiStar, label: "Landing page" },
+// /   { path: "landing", icon: FiStar, label: "Landing page" },
     { path: "customers", icon: FiUser, label: "Customers" },
     { path: "settings", icon: FiSettings, label: "Settings" },
   ];

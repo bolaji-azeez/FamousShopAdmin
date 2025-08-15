@@ -26,6 +26,8 @@ import { fetchDashboardOverview } from "@/features/admin/adminAuthSlice";
 import { SalesOverviewChart } from "../component/Chart/SalesOverviewChart";
 import { CategoryChart } from "../component/Chart/categoryChart"; // Ensure this import path is correct
 import { useAppDispatch } from "@/hooks/hooks";
+import { useGetOrdersQuery } from "@/features/order/orderApi";
+import { useGetProductsQuery } from "@/features/products/productApi";
 
 // Define the Chart components to accept data, and provide default empty arrays
 // This is crucial for when dashboardData is null or has empty arrays
@@ -37,13 +39,12 @@ interface CategoryChartProps {
 }
 
 export default function AdminDashboardPage() {
-  const dispatch = useAppDispatch(); // Get dispatch for potential retry
- 
+ const dispatch = useAppDispatch();
+  const navigate = useNavigate(); // <-- Move this here, before any return
 
-  // Call your hook here, at the top level of the component
-  const { dashboardData, isLoading, isSucceeded, isFailed, error } =
-    useDashboardData();
-
+  const { data: ordersData = [], isLoading: ordersLoading } = useGetOrdersQuery();
+  const { data: productsData = [], isLoading: productsLoading } = useGetProductsQuery();
+  const { dashboardData, isLoading, isSucceeded, isFailed, error } = useDashboardData();
   // Helper to format numbers safely for display
   const formatNumber = (
     num: number | null | undefined,
@@ -82,7 +83,7 @@ export default function AdminDashboardPage() {
     );
   }
 
-  const navigate = useNavigate;
+
 return (
     <div className="space-y-8">
       <div>
@@ -191,47 +192,52 @@ return (
             <Button
               variant="outline"
               size="sm"
-              onClick={() => navigate("/admin/orders")}> {/* Correctly call navigate */}
+              onClick={() => navigate("orders")}>
               <Eye className="h-4 w-4 mr-2" />
               View All
             </Button>
           </CardHeader>
-          <CardContent>
-            {/* Render dynamically fetched recent orders, or fallback message */}
-            {dashboardData?.recentOrders && dashboardData.recentOrders.length > 0 ? (
-              // Map actual recent orders if available in dashboardData
-              dashboardData.recentOrders.slice(0, 5).map((order) => (
-                <div key={order.id} className="flex items-center justify-between p-3 rounded-lg border bg-muted/20 mb-2"> {/* Added margin bottom */}
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium">{order.customer}</p>
-                      <Badge
-                        variant={
-                          order.status === "delivered"
-                            ? "default"
-                            : order.status === "confirmed"
-                            ? "secondary"
-                            : "outline"
-                        }
-                        className="text-xs">
-                        {order.status}
-                      </Badge>
-                    </div>
-                    <p className="text-xs text-muted-foreground">{order.product}</p>
-                    <p className="text-xs text-muted-foreground">{order.date}</p>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm font-bold">{order.amount}</div>
-                  </div>
-                </div>
-              ))
-            ) : (
-              // Fallback message if no dynamic data
-              <div className="text-muted-foreground">No recent orders data available.</div>
-            )}
-          </CardContent>
+         <CardContent>
+    {ordersLoading ? (
+      <div>Loading orders...</div>
+    ) : ordersData.length > 0 ? (
+      ordersData.slice(0, 5).map((order) => (
+        <div key={order._id} className="flex items-center justify-between p-3 rounded-lg border bg-muted/20 mb-2">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-medium">{order.userId?.fullName}</p>
+              <Badge
+                variant={
+                  order.status === "delivered"
+                    ? "default"
+                    : order.status === "confirmed"
+                    ? "secondary"
+                    : "outline"
+                }
+                className="text-xs">
+                {order.status}
+                         </Badge>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {order.products && order.products.length > 0
+                ? `${order.products[0].quantity} x ${order.products[0].price}`
+                : "—"}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {new Date(order.createdAt).toLocaleDateString()}
+            </p>
+          </div>
+          <div className="text-right">
+            <div className="text-sm font-bold">{order.totalPrice}</div>
+          </div>
+        </div>
+      ))
+    ) : (
+      <div className="text-muted-foreground">No recent orders data available.</div>
+    )}
+  </CardContent>
         </Card>
-
+        {/* Top Products Card moved outside Recent Orders Card */}
         <Card className="col-span-3">
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
@@ -240,22 +246,25 @@ return (
                 Best selling products this month
               </CardDescription>
             </div>
-            <Button variant="outline" size="sm">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate("products")}>
               <Eye className="h-4 w-4 mr-2" />
               View All
             </Button>
           </CardHeader>
           <CardContent>
-            {/* Render dynamically fetched top products, or fallback message */}
-            {dashboardData?.topProducts && dashboardData.topProducts.length > 0 ? (
-              // Map actual top products if available in dashboardData
-              dashboardData.topProducts.slice(0, 3).map((product, index) => (
+            {productsLoading ? (
+              <div>Loading products...</div>
+            ) : productsData.length > 0 ? (
+              productsData.slice(0, 3).map((product, index) => (
                 <div
-                  key={product.id}
-                  className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors mb-2"> {/* Added margin bottom */}
+                  key={product._id}
+                  className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors mb-2">
                   <div className="relative">
                     <img
-                      src={product.images[0] || "/placeholder.svg"}
+                      src={product.images?.[0] || "/placeholder.svg"}
                       alt={product.name}
                       width={40}
                       height={40}
@@ -270,17 +279,16 @@ return (
                     <p className="text-sm text-muted-foreground">{product.brand}</p>
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-bold">
-                        ${product.price.toLocaleString()}
+                        ${product.price?.toLocaleString()}
                       </span>
                       <Badge variant="secondary" className="text-xs">
-                        {product.sales} sold
+                        {product.sales || 0} sold
                       </Badge>
                     </div>
                   </div>
                 </div>
               ))
             ) : (
-              // Fallback message if no dynamic data
               <div className="text-muted-foreground">No top products data available.</div>
             )}
           </CardContent>

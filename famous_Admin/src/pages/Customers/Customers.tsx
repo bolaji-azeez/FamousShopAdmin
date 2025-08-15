@@ -89,7 +89,7 @@ export default function CustomersPage() {
           <TableBody>
             {filteredUsers.map((user) => (
               <TableRow key={user._id}>
-                <TableCell className="font-medium">{user._id}</TableCell>
+                <TableCell className="font-medium">{user._id.slice(-4)}</TableCell>
                 <TableCell>{user.fullName}</TableCell>
                 <TableCell>{user.email}</TableCell>
                 <TableCell>{user.role}</TableCell>

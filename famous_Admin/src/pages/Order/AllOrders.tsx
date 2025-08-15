@@ -117,7 +117,7 @@ export default function OrdersPage() {
             {ordersData.map((order) => (
               <TableRow key={order._id}>
                 <TableCell className="font-medium whitespace-nowrap">
-                  {order._id}
+                  {order._id.slice(-4)}
                 </TableCell>
                 <TableCell>{order.userId?.fullName}</TableCell>
                 <TableCell>
@@ -187,7 +187,7 @@ export default function OrdersPage() {
         {ordersData.map((order) => (
           <Card key={order._id} className="p-4 space-y-2">
             <div className="flex justify-between items-center">
-              <p className="text-sm font-medium">{order._id}</p>
+              <p className="text-sm font-medium">{order._id.slice(-4)}</p>
               <Badge
                 variant={
                   order.status === "delivered"
