@@ -6,23 +6,23 @@ import { brandApi } from "@/features/brand/brandApi";
 import { orderApi } from "@/features/order/orderApi";
 import { notificationApi } from "@/features/notification/notficationApi";
 
+
 import {
   persistReducer,
-  persistStore,
   FLUSH,
   REHYDRATE,
   PAUSE,
   PERSIST,
   PURGE,
   REGISTER,
+  persistStore,
 } from "redux-persist";
 import storage from "redux-persist/lib/storage";
 
 const persistConfig = {
   key: "root",
   version: 1,
-  storage,
-  whitelist: ["auth"],
+  storage
 };
 
 const persistedReducer = persistReducer(persistConfig, adminAuthReducer);
