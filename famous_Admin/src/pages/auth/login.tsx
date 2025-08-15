@@ -147,7 +147,7 @@ const AdminLogin = () => {
             <button
               type="submit"
               disabled={loading}
-              className={`w-full py-2 px-4 rounded-md text-white font-medium ${
+              className={`w-full py-2 px-4 rounded-md text-white font-medium hover:cursor-pointer ${
                 loading ? "bg-gray-400 cursor-not-allowed" : "bg-[#101828]"
               }`}>
               {loading ? "Logging in..." : "Login"}
