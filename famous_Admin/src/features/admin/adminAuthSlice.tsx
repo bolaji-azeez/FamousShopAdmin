@@ -3,22 +3,21 @@ import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { login } from "../../service/authService";
 import apiClient from "@/lib/axios";
 
-// Define the shape of the dashboard data
-// This interface should ideally be in its own file or a shared types file
+
 interface DashboardData {
   totalUser: number;
   totalProducts: number;
   totalOrders: number;
-  monthlySalesData: any[]; // Consider defining a more specific type
-  salesOverview: any[]; // Consider defining a more specific type
+  monthlySalesData: any[]; 
+  salesOverview: any[]; 
 }
 
 interface AuthState {
-  user: User | null; // Assuming 'User' is defined elsewhere
+  user: string | null; 
   token: string | null;
   status: "idle" | "loading" | "succeeded" | "failed";
   error: string | null;
-  dashboardData: DashboardData | null; // It can be null initially if we are expecting it from API
+  dashboardData: DashboardData | null; 
 }
 const initialState: AuthState = {
   user: null,
@@ -41,7 +40,7 @@ export interface LoginCredentials {
 }
 
 export interface ChangePasswordData {
-  currentPassword: string;
+ currentPassword: string;
   newPassword: string;
 }
 
@@ -60,22 +59,24 @@ export const loginAdmin = createAsyncThunk(
 export const changeAdminPassword = createAsyncThunk(
   "auth/changePassword",
   async (
-    passwordData: { currentPassword: string; newPassword: string },
+    passwordData: {currentPassword: string, newPassword: string },
     { getState, rejectWithValue }
   ) => {
     try {
-      const { auth } = getState() as { auth: AuthState }; // Type assertion for getState
+      const { adminAuth } = getState() as { adminAuth: AuthState }; // Type assertion for getState
       const response = await apiClient.post(
         "/admin/change-password",
         passwordData,
         {
           headers: {
-            Authorization: `Bearer ${auth.token}`,
+            Authorization: `Bearer ${adminAuth.token}`,
           },
         }
       );
+      console.log("Password change successful:", response.data);
       return response.data;
-    } catch (error: any) {
+    } catch (error) {
+       console.log("Raw error:", error); // Add this line
       return rejectWithValue(
         error.response?.data?.message || "Password change failed"
       );
@@ -112,7 +113,7 @@ export const fetchDashboardOverview = createAsyncThunk(
 );
 
 const authSlice = createSlice({
-  name: "auth", // Name of the slice
+  name: "adminAuth", // Name of the slice
   initialState,
   reducers: {
     logout: (state) => {
@@ -144,21 +145,25 @@ const authSlice = createSlice({
         state.token = action.payload.token; // Redux-persist will save this token
         state.error = null;
       })
-      .addCase(loginAdmin.rejected, (state, action) => {
-        state.status = "failed";
-        state.error = action.payload as string;
-        state.user = null;
-        state.token = null; // Clear token on failed login
-        state.dashboardData = initialState.dashboardData; // Reset dashboard on login failure
-      })
+     .addCase(loginAdmin.rejected, (state, action) => {
+      state.status = "failed";
+      state.error = action.payload as string;
+      state.user = null;
+      state.token = null;
+      state.dashboardData = initialState.dashboardData;
+    })
       .addCase(changeAdminPassword.pending, (state) => {
         state.status = "loading";
         state.error = null;
       })
-      .addCase(changeAdminPassword.fulfilled, (state) => {
-        state.status = "succeeded";
-        state.error = null;
-      })
+     .addCase(changeAdminPassword.fulfilled, (state, action) => {
+  state.status = "succeeded";
+  state.error = null;
+  // If backend returns a new token:
+  if (action.payload.token) {
+    state.token = action.payload.token;
+  }
+})
       .addCase(changeAdminPassword.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.payload as string;

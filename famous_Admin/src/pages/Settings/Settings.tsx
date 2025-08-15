@@ -13,66 +13,59 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useNavigate } from "react-router-dom";
 
-import { useAppDispatch, useAppSelector } from "@/hooks/hooks";
-import { changeAdminPassword } from "@/features/admin/adminAuthSlice"; // Adjust path if needed
+
+import { useAppSelector } from "@/hooks/hooks";
+// import { changeAdminPassword } from "@/features/admin/adminAuthSlice"; // Adjust path if needed
+import apiClient from "@/lib/axios";
 
 export default function SettingsPage() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordMessage, setPasswordMessage] = useState<{
     type: "success" | "error" | "idle";
     text: string;
   }>({ type: "idle", text: "" });
 
-  const dispatch = useAppDispatch();
-  // Correctly select from the store. Assuming 'auth' is the key, not 'adminAuth'.
-  // If it IS 'adminAuth', then use state.adminAuth.
-  const { status, error } = useAppSelector((state) => state.adminAuth); // <<< Ensure this is the correct key
 
-  // Correctly initialize useNavigate if you were to use it later.
-  // const navigate = useNavigate();
 
-  const handlePasswordChange = (e: React.FormEvent) => {
-    e.preventDefault();
+  
+  const { status,token } = useAppSelector((state) => state.adminAuth); 
 
-    // --- ALL LOGIC MOVED INSIDE THE FUNCTION ---
+  console.log(token)
+  
+const handlePasswordChange = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (currentPassword.trim() === "" || newPassword.trim() === "") {
+    setPasswordMessage({ type: 'error', text: "All fields are required." });
+    return;
+  }
+  if (newPassword.length < 6) {
+    setPasswordMessage({ type: 'error', text: "New password must be at least 6 characters long." });
+    return;
+  }
+  try {
+    await apiClient.post(
+      "/admin/change-password",
+      { currentPassword, newPassword },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    setPasswordMessage({ type: 'success', text: "Password updated successfully!" });
+    setCurrentPassword("");
+    setNewPassword("");
+    setTimeout(() => setPasswordMessage({ type: 'idle', text: '' }), 3000);
+  } catch (error: any) {
+    setPasswordMessage({
+      type: 'error',
+      text: error.response?.data?.message || "Password change failed. Please try again.",
+    });
+  }
+};
 
-    // Perform validation
-    if (currentPassword.trim() === "" || newPassword.trim() === "" || confirmPassword.trim() === "") {
-      setPasswordMessage({ type: 'error', text: "All fields are required." });
-      return; // Stop execution
-    }
-
-    if (newPassword !== confirmPassword) {
-      setPasswordMessage({ type: 'error', text: "New password and confirm password do not match." });
-      return; // Stop execution
-    }
-
-    if (newPassword.length < 6) { // Example: Minimum password length
-      setPasswordMessage({ type: 'error', text: "New password must be at least 6 characters long." });
-      return; // Stop execution
-    }
-
-    // If validation passes, dispatch the thunk
-    dispatch(changeAdminPassword({ currentPassword, newPassword }))
-      .unwrap() // unwrap the promise to handle results
-      .then(() => {
-        setPasswordMessage({ type: 'success', text: "Password updated successfully!" });
-        // Clear form fields on success
-        setCurrentPassword("");
-        setNewPassword("");
-        setConfirmPassword("");
-        // Clear the success message after a delay
-        setTimeout(() => setPasswordMessage({ type: 'idle', text: '' }), 3000);
-      })
-      .catch((errorMsg: string) => {
-        // Use the error from the caught promise, or fallback
-        setPasswordMessage({ type: 'error', text: errorMsg || "Password change failed. Please try again." });
-      });
-  };
 
   return (
     <div className="space-y-6">
@@ -211,16 +204,7 @@ export default function SettingsPage() {
                     required
                   />
                 </div>
-                <div className="space-2">
-                  <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                  <Input
-                    id="confirmPassword"
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                  />
-                </div>
+                
 
                 {/* Display feedback messages */}
                 {passwordMessage.type === 'success' && (
@@ -230,23 +214,14 @@ export default function SettingsPage() {
                   <p className="text-sm text-red-500">{passwordMessage.text}</p>
                 )}
 
-                <Button
-                  type="submit"
-                  disabled={
-                    status === 'loading' ||
-                    newPassword !== confirmPassword ||
-                    currentPassword.trim() === '' ||
-                    newPassword.trim() === '' ||
-                    confirmPassword.trim() === ''
-                  }
-                >
-                  {status === 'loading' ? 'Updating...' : (
-                    <>
-                      <Save className="h-4 w-4 mr-2" />
-                      Update Password
-                    </>
-                  )}
-                </Button>
+               <Button type="submit" disabled={status === 'loading'}>
+  {status === 'loading' ? 'Updating...' : (
+    <>
+      <Save className="h-4 w-4 mr-2" />
+      Update Password
+    </>
+  )}
+</Button>
               </form>
             </CardContent>
           </Card>
