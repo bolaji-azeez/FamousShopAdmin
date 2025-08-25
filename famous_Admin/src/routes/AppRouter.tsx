@@ -4,7 +4,6 @@ import Dashboard from "@/pages/Dashboard";
 import Popular from "@/pages/Featured/Popular";
 import Trending from "@/pages/Featured/Trending";
 import AllOrders from "@/pages/Order/AllOrders";
-import OrderDetailModal from "@/pages/Order/OrderModal";
 import ProductsPage from "@/pages/Product/AllPoductPage";
 import CreateProductPage from "@/pages/Product/create/create-product";
 import EditProductPage from "@/pages/Product/edit/edit-product";
@@ -49,11 +48,7 @@ const routes: RouteObject[] = [
         path: "orders",
         element: <AllOrders />,
       },
-      {
-        path: "orderDetailModal",
-        element: <OrderDetailModal />
-        
-      },
+    
       {
         path: "popular",
         element: <Popular />,

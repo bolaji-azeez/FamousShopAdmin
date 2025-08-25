@@ -18,25 +18,19 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
-import { useNavigate } from "react-router-dom";
+import {  useNavigate } from "react-router-dom";
 
 // Import your custom hook
 import { useDashboardData } from "@/hooks/useDashboardData"; // Hook lives here now
 import { fetchDashboardOverview } from "@/features/admin/adminAuthSlice";
-import { SalesOverviewChart } from "../component/Chart/SalesOverviewChart";
-import { CategoryChart } from "../component/Chart/categoryChart"; // Ensure this import path is correct
+ // Ensure this import path is correct
 import { useAppDispatch } from "@/hooks/hooks";
 import { useGetOrdersQuery } from "@/features/order/orderApi";
 import { useGetProductsQuery } from "@/features/products/productApi";
+import { useGetUsersQuery } from "@/features/users/userApi";
 
-// Define the Chart components to accept data, and provide default empty arrays
-// This is crucial for when dashboardData is null or has empty arrays
-interface SalesOverviewChartProps {
-  salesData?: { date: string; sales: number }[];
-}
-interface CategoryChartProps {
-  salesData?: { category: string; count: number }[];
-}
+
+
 
 export default function AdminDashboardPage() {
  const dispatch = useAppDispatch();
@@ -44,6 +38,11 @@ export default function AdminDashboardPage() {
 
   const { data: ordersData = [], isLoading: ordersLoading } = useGetOrdersQuery();
   const { data: productsData = [], isLoading: productsLoading } = useGetProductsQuery();
+  const {data: totalUser = [], isLoading: usersLoading } = useGetUsersQuery();
+  console.log(productsData, "This is product data")
+  console.log(ordersData, "This is order data")
+  console.log(totalUser, "This is users data")
+
   const { dashboardData, isLoading, isSucceeded, isFailed, error } = useDashboardData();
   // Helper to format numbers safely for display
   const formatNumber = (
@@ -123,7 +122,7 @@ return (
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatNumber(dashboardData?.totalProducts, '0')} {/* Corrected: Use actual data field */}
+              {formatNumber(ordersData.length, '0')} {/* Corrected: Use actual data field */}
             </div>
             <div className="flex items-center text-xs text-blue-600 mt-1">
               <TrendingUp className="h-3 w-3 mr-1" />
@@ -142,7 +141,7 @@ return (
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatNumber(dashboardData?.totalOrders, '0')} {/* Corrected: Use actual data field */}
+              {formatNumber(productsData.length, '0')} {/* Corrected: Use actual data field */}
             </div>
             <div className="flex items-center text-xs text-purple-600 mt-1">
               <TrendingUp className="h-3 w-3 mr-1" />
@@ -161,7 +160,7 @@ return (
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatNumber(dashboardData?.totalUser, '0')} {/* Corrected: Use actual data field */}
+              {formatNumber(totalUser.length, '0')} {/* Corrected: Use actual data field */}
             </div>
             <div className="flex items-center text-xs text-orange-600 mt-1">
               <TrendingUp className="h-3 w-3 mr-1" />
@@ -172,12 +171,7 @@ return (
         </Card>
       </div>
 
-      {/* Charts Section */}
-      <div className="grid gap-4 md:grid-cols-7">
-        {/* Pass dynamic data safely. Ensure your Chart components handle null/empty data */}
-        <SalesOverviewChart salesData={dashboardData?.monthlySalesData} />
-        <CategoryChart salesData={dashboardData?.salesOverview} />
-      </div>
+   
 
       {/* Recent Activity */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
@@ -282,7 +276,7 @@ return (
                         ${product.price?.toLocaleString()}
                       </span>
                       <Badge variant="secondary" className="text-xs">
-                        {product.sales || 0} sold
+                        {product.salesData?.sales || 0} sold
                       </Badge>
                     </div>
                   </div>

@@ -1,14 +1,15 @@
 "use client";
 
-import React from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import ProductForm from "@/component/ProductForm";
+import { toast } from "react-toastify";
 
-// Mock data for editing
+
+// You need to provide the product's _id and initial data for editing
 const mockProductData = {
+  productId: "1234567890", // Replace with actual product ID
   name: "Rolex Submariner",
-  description:
-    "The Rolex Submariner is a legendary diving watch that combines exceptional functionality with timeless elegance. Crafted with precision and built to withstand the depths of the ocean.",
+  description: "The Rolex Submariner is a legendary diving watch...",
   price: 8500,
   discountedPrice: 7999,
   stock: 5,
@@ -21,21 +22,33 @@ const mockProductData = {
     "Oystersteel case",
     "Glidelock clasp",
   ],
+  images: [
+    // Add image URLs or base64 strings here if needed
+  ],
 };
 
 export default function EditProductPage() {
   const navigate = useNavigate();
-  const params = useParams(); // Example: if route is /admin/products/:id
 
-  const handleSubmit = (productData: typeof mockProductData) => {
-    console.log("Updating product:", productData);
-    // Here you would typically send the data to your API
-    // For now, we'll just log it and redirect
-    navigate("/admin/products");
+  const handleSubmit = async (formData: FormData) => {
+    try {
+      // Use the product's _id from initialData
+      const response = await fetch(`/products/${productId}`, {
+        method: "PUT",
+        body: formData,
+      });
+
+      if (!response.ok) throw new Error("Failed to save product");
+
+      toast.success("Product saved successfully!");
+      navigate("/products");
+    } catch (err) {
+      toast.error("Failed to save product");
+    }
   };
 
   const handleCancel = () => {
-    navigate("/admin/products");
+    navigate("/products");
   };
 
   return (

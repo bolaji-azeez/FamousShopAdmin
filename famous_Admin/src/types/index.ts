@@ -1,6 +1,7 @@
 export interface Product {
   _id: string;
   name: string;
+  productId: number;
   description: string;
   price: number;
   brand: string;
@@ -14,13 +15,17 @@ export interface Product {
   status: "active" | "draft" | "archived";
   createdAt: string;
   updatedAt?: string;
+  __v: number;
 }
 
 export type ProductTableItem = Pick<
   Product,
-  "id" | "name" | "price" | "discountedPrice" | "stock" | "status" | "category"
+  "_id" | "name" | "price" | "status"
 > & {
   thumbnail: string;
+  discountedPrice?: number;
+  stock?: number;
+  category?: string;
 };
 
 export interface ApiResponse<T> {
@@ -160,12 +165,6 @@ export interface Order {
 
   carrier: string;
   estimatedDelivery: string;
-
-  
-
-  
-
- 
 }
 
 export interface OrderTableItem {
@@ -195,3 +194,69 @@ export interface DashboardData {
     sales: number;
   }[];
 }
+
+export type TimelineStep = {
+  status: string;
+  description?: string;
+  date?: string;
+  time?: string;
+  icon?: React.ElementType;
+  completed?: boolean;
+  current?: boolean;
+};
+
+export type OrderProduct = {
+  _id: string;
+  productId: {
+    _id: string;
+    name: string;
+  };
+  price: number;
+  quantity: number;
+};
+
+export type OrderUser = {
+  _id: string;
+  fullName: string;
+  email: string;
+  phoneNumber: string;
+};
+
+export type ShippingAddress = {
+  street: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  country: string;
+};
+
+export type Shipping = {
+  method: string;
+  cost: number;
+  estimatedDelivery: string;
+  trackingNumber: string;
+};
+
+export type FullOrder = {
+  _id: string;
+  orderId: number;
+  status: "pending" | "confirmed" | "delivered";
+  totalQuantity: number;
+  totalPrice: number;
+  createdAt: string;
+  updatedAt: string;
+  userId: OrderUser;
+  products: OrderProduct[];
+  timeline: TimelineStep[];
+  shippingAddress?: ShippingAddress;
+  shipping?: Shipping;
+  phoneNumber: number;
+};
+
+export type OrderModalProps = {
+  isOpen: boolean;
+  onClose: () => void;
+  orderId: string;
+};
+
+
