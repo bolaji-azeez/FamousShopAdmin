@@ -4,17 +4,22 @@ import {
   type PayloadAction,
 } from "@reduxjs/toolkit";
 import apiClient from "../../lib/axios";
+import type { Product } from "@/types";
 
-export interface Product {
-  id: string;
-  title: string;
-  description: string;
-  price: number;
-  image?: string;
-  category?: string;
-  createdAt?: string;
-  updatedAt?: string;
-}
+//  interface Product {
+//   _id: string;
+//   productId: number;
+//   name: string;
+//   brand: string;
+//   description: string;
+//   quantity: number;
+//   price: number;
+//   images: string[];
+//   features: string[];
+//   createdAt: string;
+//   updatedAt: string;
+//   __v: number;
+// }
 
 interface ProductState {
   items: Product[];
@@ -31,40 +36,41 @@ const initialState: ProductState = {
 };
 // 🔁 Thunks
 
-export const fetchProduct = createAsyncThunk<Product, string>(
-  "products/fetchOne",
-  async (id, { rejectWithValue }) => {
+export const fetchProducts = createAsyncThunk<Product[]>(
+  "products/fetchAll",
+  async (_, { rejectWithValue }) => {
     try {
-      const res = await apiClient.get(`/products/${id}`);
+      const res = await apiClient.get("/products");
       return res.data;
     } catch (err: any) {
       return rejectWithValue(
-        err.response?.data?.message || "Failed to fetch product"
+        err.response?.data?.message || "Failed to fetch products"
       );
     }
   }
 );
 
-export const createProduct = createAsyncThunk<Product, Omit<Product, "id">>(
-  "products/create",
-  async (productData, { rejectWithValue }) => {
-    try {
-      const res = await apiClient.post("/products", productData);
-      return res.data;
-    } catch (err: any) {
-      return rejectWithValue(
-        err.response?.data?.message || "Failed to create product"
-      );
-    }
+export const createProduct = createAsyncThunk<
+  Product,
+  Omit<Product, "productId">
+>("products/create", async (productData, { rejectWithValue }) => {
+  try {
+    const res = await apiClient.post("/products", productData);
+    return res.data;
+  } catch (err: any) {
+    return rejectWithValue(
+      err.response?.data?.message || "Failed to create product"
+    );
   }
-);
+});
 
 export const updateProduct = createAsyncThunk<
   Product,
   { id: string; updates: Partial<Product> }
 >("products/update", async ({ id, updates }, { rejectWithValue }) => {
   try {
-    const res = await apiClient.put(`/product${id}`, updates);
+    const res = await apiClient.put(`/products/${id}`, updates);
+
     return res.data;
   } catch (err: any) {
     return rejectWithValue(
@@ -72,6 +78,20 @@ export const updateProduct = createAsyncThunk<
     );
   }
 });
+
+export const deleteProduct = createAsyncThunk<string, string>(
+  "products/delete",
+  async (id, { rejectWithValue }) => {
+    try {
+      await apiClient.delete(`/products/${id}`);
+      return id;
+    } catch (err: any) {
+      return rejectWithValue(
+        err.response?.data?.message || "Failed to delete product"
+      );
+    }
+  }
+);
 
 // 🔧 Slice
 const productsSlice = createSlice({
@@ -81,21 +101,24 @@ const productsSlice = createSlice({
     clearSelectedProduct(state) {
       state.selectedProduct = null;
     },
+    setSelectedProduct(state, action: PayloadAction<Product>) {
+      state.selectedProduct = action.payload;
+    },
   },
   extraReducers: (builder) => {
     builder
-      .addCase(fetchProduct.pending, (state) => {
+      .addCase(fetchProducts.pending, (state) => {
         state.status = "loading";
         state.error = null;
       })
       .addCase(
-        fetchProduct.fulfilled,
-        (state, action: PayloadAction<Product>) => {
+        fetchProducts.fulfilled,
+        (state, action: PayloadAction<Product[]>) => {
+          state.items = action.payload;
           state.status = "succeeded";
-          state.selectedProduct = action.payload;
         }
       )
-      .addCase(fetchProduct.rejected, (state, action) => {
+      .addCase(fetchProducts.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.payload as string;
       })
@@ -109,9 +132,16 @@ const productsSlice = createSlice({
         updateProduct.fulfilled,
         (state, action: PayloadAction<Product>) => {
           const index = state.items.findIndex(
-            (p) => p.id === action.payload.id
+            (p) => p._id === action.payload._id
           );
           if (index !== -1) state.items[index] = action.payload;
+        }
+      )
+
+      .addCase(
+        deleteProduct.fulfilled,
+        (state, action: PayloadAction<string>) => {
+          state.items = state.items.filter((p) => p._id !== action.payload);
         }
       );
   },

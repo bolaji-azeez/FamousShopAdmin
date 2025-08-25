@@ -2,8 +2,7 @@
 import { useState, useCallback, ChangeEvent } from "react";
 import { Upload } from "lucide-react";
 import { Label } from "@/components/ui/label";
-import Image from "next/image";
-
+import ImageUploader from "./ImageUploader";
 export function ImageUploader({
   onImagesSelected,
 }: {
@@ -66,8 +65,7 @@ export function ImageUploader({
           setIsDragging(true);
         }}
         onDragLeave={() => setIsDragging(false)}
-        onDrop={handleDrop}
-      >
+        onDrop={handleDrop}>
         <div className="relative">
           <input
             type="file"
@@ -81,9 +79,7 @@ export function ImageUploader({
           <p className="mt-2 text-sm text-gray-600">
             Click to upload or drag and drop
           </p>
-          <p className="text-xs text-gray-500">
-            PNG, JPG, GIF up to 10MB
-          </p>
+          <p className="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
         </div>
       </div>
 
@@ -93,19 +89,17 @@ export function ImageUploader({
           {previewUrls.map((url, index) => (
             <div key={index} className="relative group">
               <div className="aspect-square overflow-hidden rounded-lg border">
-                <Image
-                  src={url}
-                  alt={`Preview ${index + 1}`}
-                  width={200}
-                  height={200}
-                  className="object-cover w-full h-full"
+                <ImageUploader
+                  images={images}
+                  onImagesChange={setImages}
+                  onFilesChange={setImageFiles}
+                  multiple
                 />
               </div>
               <button
                 type="button"
                 onClick={() => removeImage(index)}
-                className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-              >
+                className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 ×
               </button>
             </div>

@@ -1,9 +1,9 @@
 import { useState, useCallback } from "react";
-import { FiUpload, FiX, FiImage } from "react-icons/fi";
+import { FiUpload, FiX } from "react-icons/fi";
 
 type ImageUploaderProps = {
-  images: string | string[];
-  onImagesChange?: (images: string | string[]) => void;
+  images: string[]; // always use array for consistency
+  onImagesChange?: (images: string[]) => void;
   onFilesChange?: (files: File[]) => void;
   multiple?: boolean;
   aspectRatio?: number;
@@ -11,7 +11,7 @@ type ImageUploaderProps = {
 };
 
 const ImageUploader = ({
-  images,
+  images = [],
   onImagesChange,
   onFilesChange,
   multiple = false,
@@ -19,29 +19,33 @@ const ImageUploader = ({
   uploadText = "Upload Images",
 }: ImageUploaderProps) => {
   const [isDragging, setIsDragging] = useState(false);
-  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [files, setFiles] = useState<File[]>([]);
 
   const handleFileChange = useCallback(
-    (files: FileList) => {
-      const fileArray = Array.from(files);
+    (fileList: FileList) => {
+      const fileArray = Array.from(fileList);
       const newImages: string[] = [];
-      const newFiles: File[] = [];
-
-      fileArray.slice(0, multiple ? files.length : 1).forEach((file) => {
-        newFiles.push(file);
+      fileArray.forEach((file) => {
         const reader = new FileReader();
         reader.onload = (e) => {
           newImages.push(e.target?.result as string);
-          if (newImages.length === fileArray.length || !multiple) {
-            onImagesChange?.(multiple ? newImages : newImages[0]);
-            onFilesChange?.(newFiles);
-            setUploadedFiles(prev => [...prev, ...newFiles]);
+          // When all files are read, update parent
+          if (newImages.length === fileArray.length) {
+            const updatedImages = multiple
+              ? [...images, ...newImages]
+              : [newImages[0]];
+            onImagesChange?.(updatedImages);
+            const updatedFiles = multiple
+              ? [...files, ...fileArray]
+              : [fileArray[0]];
+            setFiles(updatedFiles);
+            onFilesChange?.(updatedFiles);
           }
         };
         reader.readAsDataURL(file);
       });
     },
-    [multiple, onImagesChange, onFilesChange]
+    [multiple, images, files, onImagesChange, onFilesChange]
   );
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -62,22 +66,15 @@ const ImageUploader = ({
   };
 
   const removeImage = (index: number) => {
-    if (Array.isArray(images)) {
-      const newImages = [...images];
-      newImages.splice(index, 1);
-      onImagesChange?.(newImages);
-      const newFiles = [...uploadedFiles];
-      newFiles.splice(index, 1);
-      setUploadedFiles(newFiles);
-      onFilesChange?.(newFiles);
-    } else {
-      onImagesChange?.("");
-      setUploadedFiles([]);
-      onFilesChange?.([]);
-    }
-  };
+    const newImages = [...images];
+    newImages.splice(index, 1);
+    onImagesChange?.(newImages);
 
-  const currentImages = Array.isArray(images) ? images : images ? [images] : [];
+    const newFiles = [...files];
+    newFiles.splice(index, 1);
+    setFiles(newFiles);
+    onFilesChange?.(newFiles);
+  };
 
   return (
     <div className="space-y-2">
@@ -112,26 +109,9 @@ const ImageUploader = ({
         </div>
       </div>
 
-      {uploadedFiles.length > 0 && (
-        <div className="space-y-2">
-          {uploadedFiles.map((file, index) => (
-            <div key={index} className="flex items-center justify-between p-2 bg-gray-100 rounded">
-              <span className="text-sm truncate">{file.name}</span>
-              <button
-                type="button"
-                onClick={() => removeImage(index)}
-                className="text-red-500 hover:text-red-700"
-              >
-                <FiX className="h-4 w-4" />
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {currentImages.length > 0 && (
+      {images.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-          {currentImages.map((img, index) => (
+          {images.map((img, index) => (
             <div
               key={index}
               className="relative group"

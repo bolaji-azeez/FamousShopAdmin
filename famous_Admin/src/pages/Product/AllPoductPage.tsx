@@ -334,10 +334,10 @@ export default function ProductsPage() {
                   </p>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-2xl font-bold">${product.price}</span>
+                  <span className="text-2xl font-bold">₦{product.price}</span>
                   <div className="flex items-center space-x-1">
                     <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                    <span className="text-sm">{product.rating || 0}</span>
+                   
                   </div>
                 </div>
                 <div className="flex items-center justify-between text-sm">

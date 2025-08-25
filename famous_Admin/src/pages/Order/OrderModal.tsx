@@ -20,8 +20,66 @@ import { Loader2 } from "lucide-react";
 import {
   useGetOrderByIdQuery,
   useUpdateOrderStatusMutation,
-  useGetOrderDetailsQuery,
+
 } from "@/features/order/orderApi";
+
+
+type TimelineStep = {
+  status: string;
+  description?: string;
+  date?: string;
+  time?: string;
+  icon?: React.ElementType;
+  completed?: boolean;
+  current?: boolean;
+};
+
+type OrderProduct = {
+  _id: string;
+  productId: {
+    _id: string;
+    name: string;
+  };
+  price: number;
+  quantity: number;
+};
+
+type OrderUser = {
+  _id: string;
+  fullName: string;
+  email: string;
+  phoneNumber: number;
+};
+
+type ShippingAddress = {
+  street: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  country: string;
+};
+
+type Shipping = {
+  method: string;
+  cost: number;
+  estimatedDelivery: string;
+  trackingNumber: string;
+};
+
+type FullOrder = {
+  _id: string;
+  orderId: number;
+  status: "pending" | "confirmed" | "delivered";
+  totalQuantity: number;
+  totalPrice: number;
+  createdAt: string;
+  updatedAt: string;
+  userId: OrderUser;
+  products: OrderProduct[];
+  timeline: TimelineStep[];
+  shippingAddress?: ShippingAddress;
+  shipping?: Shipping;
+};
 
 type OrderModalProps = {
   isOpen: boolean;
@@ -34,19 +92,15 @@ export const OrderDetailModal = ({
   onClose,
   orderId,
 }: OrderModalProps) => {
+
   const {
     data: orderDetails,
     isLoading,
     isError,
-  } = useGetOrderByIdQuery(orderId); // Removed skip condition
+    error, 
+  } = useGetOrderByIdQuery(orderId);
 
-  const {
-    data: orderDetailsData,
-    isLoading: isDetailsLoading,
-    isError: isDetailsError,
-  } = useGetOrderDetailsQuery(orderId);
-
-  const DEFAULT_ORDER = {
+  const DEFAULT_ORDER: FullOrder = {
     _id: "",
     orderId: 0,
     status: "pending",
@@ -58,29 +112,44 @@ export const OrderDetailModal = ({
       _id: "",
       fullName: "Unknown Customer",
       email: "No email provided",
-      phoneNumber: "No phone provided",
+      phoneNumber: 0,
     },
-    products: [
-      {
-        _id: "",
-        productId: {
-          _id: "",
-          name: "Unknown Product",
-        },
-        price: 0,
-        quantity: 0,
-      },
-    ],
+    products: [],
     timeline: [],
-
     shippingAddress: undefined,
     shipping: undefined,
   };
-  const [updateOrderStatus] = useUpdateOrderStatusMutation();
-  const [fullOrderDetails, setFullOrderDetails] = useState(DEFAULT_ORDER);
+
+  const [fullOrderDetails, setFullOrderDetails] = useState<FullOrder>(DEFAULT_ORDER);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
+  const [updateOrderStatus] = useUpdateOrderStatusMutation();
+
+ 
+  useEffect(() => {
+    if (orderDetails) {
+  
+      setFullOrderDetails(orderDetails as FullOrder);
+    }
+   
+  }, [orderDetails]);
+
+  
+  useEffect(() => {
+    if (isError) {
+      console.error("Error fetching order details:", error); 
+    }
+   
+  }, [isError, error]); 
+
   const handleStatusUpdate = async (newStatus: string) => {
+    // Ensure fullOrderDetails._id is valid before proceeding
+    if (!fullOrderDetails._id) {
+        console.error("Cannot update status: Order ID is missing.");
+        toast.error("Cannot update status: Order ID is missing.");
+        return;
+    }
+
     setIsUpdatingStatus(true);
     try {
       await updateOrderStatus({
@@ -90,62 +159,23 @@ export const OrderDetailModal = ({
 
       setFullOrderDetails((prev) => ({
         ...prev,
-        status: newStatus,
+        status: newStatus, 
       }));
+      toast.success(`Order status updated to ${newStatus}`); // User feedback
     } catch (error) {
       console.error("Status update failed:", error);
+   
+       if (error && typeof error === 'object' && 'data' in error && typeof error.data === 'object' && error.data && 'message' in error.data) {
+          toast.error(`Failed to update status: ${error.data.message}`);
+      } else {
+          toast.error("Failed to update status");
+      }
     } finally {
       setIsUpdatingStatus(false);
     }
   };
-  useEffect(() => {
-    if (isError) {
-      console.error("Error fetching order details:", isError);
-    }
-    if (isDetailsError) {
-      console.error("Error fetching order details data:", isDetailsError);
-    }
-  }, [isError, isDetailsError]);
-  console.log("Order ID:", orderId);
-  console.log("Is Open:", isOpen);
-  console.log("Order Details:", orderDetails);
-  console.log("Order Details Data:", orderDetailsData);
 
-  if (isLoading || isDetailsLoading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <span>Loading order details...</span>
-      </div>
-    );
-  }
-
-  if (!orderDetails && !orderDetailsData) {
-    return (
-      <div className="flex justify-center items-center h-64 text-yellow-500">
-        <span>No order data available.</span>
-      </div>
-    );
-  }
-
-  if (isLoading || isDetailsLoading) {
-    return (
-      <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent>
-          <LoadingSpinner />
-        </DialogContent>
-      </Dialog>
-    );
-  }
-
-  if (isError || isDetailsError) {
-    return (
-      <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent>
-          <ErrorDisplay />
-        </DialogContent>
-      </Dialog>
-    );
-  }
+  console.log(orderDetails, "This is order details");
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -160,168 +190,132 @@ export const OrderDetailModal = ({
     }
   };
 
+  if (isLoading) {
+    return (
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent>
+          <LoadingSpinner />
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  if (isError || !orderDetails) { 
+    return (
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent>
+          <ErrorDisplay message={error?.toString() || "Failed to load order details"} />
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  const orderIdToDisplay = fullOrderDetails.orderId || fullOrderDetails._id || 'N/A';
+  const orderDate = fullOrderDetails.createdAt
+    ? new Date(fullOrderDetails.createdAt).toLocaleDateString()
+    : "Unknown date";
+  const userFullName = fullOrderDetails.userId?.fullName || "Unknown Customer";
+  const userEmail = fullOrderDetails.userId?.email || "No email provided";
+  const userPhoneNumber = fullOrderDetails.userId?.phoneNumber || "No phone provided";
+  const shippingAddress = fullOrderDetails.shippingAddress;
+  const shipping = fullOrderDetails.shipping;
+  const orderProducts = fullOrderDetails.products || [];
+  const orderTimeline = fullOrderDetails.timeline || [];
+  const orderStatus = fullOrderDetails.status || "pending";
+
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader className="pb-4">
           <div className="flex items-center justify-between">
             <div>
-              <DialogTitle className="text-2xl font-bold">
-                Order Details
-              </DialogTitle>
+              <DialogTitle className="text-2xl font-bold">Order Details</DialogTitle>
               <DialogDescription className="text-base mt-1">
-                {fullOrderDetails.orderNumber} • Placed on{" "}
-                {fullOrderDetails.date} at {fullOrderDetails.time}
+                Order #{orderIdToDisplay} • Placed on {orderDate}
               </DialogDescription>
             </div>
-            <Badge className={getStatusColor(fullOrderDetails.status)}>
-              {fullOrderDetails.status.charAt(0).toUpperCase() +
-                fullOrderDetails.status.slice(1)}
+            <Badge className={getStatusColor(orderStatus)}>
+              {orderStatus.charAt(0).toUpperCase() + orderStatus.slice(1)}
             </Badge>
           </div>
         </DialogHeader>
 
         <div className="grid gap-6">
           {/* Customer & Order Info */}
-          <div className="grid md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <User className="h-5 w-5" />
-                  Customer Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <Avatar className="h-12 w-12">
-                    <AvatarFallback>
-                      {fullOrderDetails.userId.fullName
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="font-semibold">
-                      {fullOrderDetails.userId.fullName}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {fullOrderDetails.userId.email}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {fullOrderDetails.userId.phoneNumber}
-                    </p>
-                  </div>
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <User className="h-5 w-5" /> Customer Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center gap-3">
+                <Avatar className="h-12 w-12">
+                  <AvatarFallback>
+                    {userFullName
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="font-semibold">{userFullName}</p>
+                  <p className="text-sm text-muted-foreground">{userEmail}</p>
+                  <p className="text-sm text-muted-foreground">{userPhoneNumber}</p>
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <CreditCard className="h-5 w-5" />
-                  Payment Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Method:</span>
-                  <span className="text-sm font-medium">
-                    {fullOrderDetails.payment.method}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Card:</span>
-                  <span className="text-sm font-medium">
-                    {fullOrderDetails.payment.cardType} ••••{" "}
-                    {fullOrderDetails.payment.lastFour}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">
-                    Transaction ID:
-                  </span>
-                  <span className="text-sm font-mono">
-                    {fullOrderDetails.payment.transactionId}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Status:</span>
-                  <Badge
-                    variant="outline"
-                    className="bg-green-50 text-green-700 border-green-200">
-                    {fullOrderDetails.payment.status}
-                  </Badge>
-                </div>
-              </CardContent>
-            </Card> */}
-          </div>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Shipping Addresses */}
           <div className="grid md:grid-cols-2 gap-6">
-            {fullOrderDetails.shippingAddress && (
+            {shippingAddress && (
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center gap-2 text-lg">
-                    <MapPin className="h-5 w-5" />
-                    Shipping Address
+                    <MapPin className="h-5 w-5" /> Shipping Address
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-1 text-sm">
-                    <p className="font-medium">
-                      {fullOrderDetails.customer.fullName}
-                    </p>
-                    <p>{fullOrderDetails.shippingAddress.street}</p>
+                    <p className="font-medium">{userFullName}</p>
+                    <p>{shippingAddress.street}</p>
                     <p>
-                      {fullOrderDetails.shippingAddress.city},{" "}
-                      {fullOrderDetails.shippingAddress.state}{" "}
-                      {fullOrderDetails.shippingAddress.zipCode}
+                      {shippingAddress.city}, {shippingAddress.state}{" "}
+                      {shippingAddress.zipCode}
                     </p>
-                    <p>{fullOrderDetails.shippingAddress.country}</p>
+                    <p>{shippingAddress.country}</p>
                   </div>
                 </CardContent>
               </Card>
             )}
 
-            {fullOrderDetails.timeline?.length > 0 && (
+            {shipping && ( // Check if shipping info exists
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center gap-2 text-lg">
-                    <Truck className="h-5 w-5" />
-                    Shipping Information
+                    <Truck className="h-5 w-5" /> Shipping Information
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">
-                      Method:
-                    </span>
-                    <span className="text-sm font-medium">
-                      {fullOrderDetails.shipping.method}
-                    </span>
+                    <span className="text-sm text-muted-foreground">Method:</span>
+                    <span className="text-sm font-medium">{shipping.method || "N/A"}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Cost:</span>
                     <span className="text-sm font-medium">
-                      ${fullOrderDetails.shipping.cost}
+                      {shipping.cost !== undefined ? `$${shipping.cost.toLocaleString()}` : "N/A"}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">
-                      Estimated Delivery:
-                    </span>
-                    <span className="text-sm font-medium">
-                      {fullOrderDetails.shipping.estimatedDelivery}
-                    </span>
+                    <span className="text-sm text-muted-foreground">Estimated Delivery:</span>
+                    <span className="text-sm font-medium">{shipping.estimatedDelivery || "N/A"}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">
-                      Tracking:
-                    </span>
-                    <span className="text-sm font-mono">
-                      {fullOrderDetails.shipping.trackingNumber}
-                    </span>
+                    <span className="text-sm text-muted-foreground">Tracking:</span>
+                    <span className="text-sm font-mono">{shipping.trackingNumber || "N/A"}</span>
                   </div>
                 </CardContent>
               </Card>
@@ -332,40 +326,29 @@ export const OrderDetailModal = ({
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-lg">
-                <Package className="h-5 w-5" />
-                Order Items ({fullOrderDetails.totalQuantity || 0})
+                <Package className="h-5 w-5" /> Order Items ({fullOrderDetails.totalQuantity || 0})
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {(fullOrderDetails.products || []).map((item) => {
-                  // Skip rendering if item or productId is null
+                {orderProducts.map((item) => {
+                  // Safely render item if data is valid
                   if (!item || !item.productId) return null;
+                  const itemPrice = item.price || 0;
+                  const itemQuantity = item.quantity || 0;
+                  const itemTotal = itemPrice * itemQuantity;
 
                   return (
-                    <div
-                      key={item._id}
-                      className="flex items-center gap-4 p-4 border rounded-lg">
+                    <div key={item._id} className="flex items-center gap-4 p-4 border rounded-lg">
                       <div className="flex-1">
-                        <h4 className="font-semibold">
-                          {item.productId.name || "Unknown Product"}
-                        </h4>
+                        <h4 className="font-semibold">{item.productId.name || "Unknown Product"}</h4>
                         <div className="flex items-center gap-4 mt-2">
-                          <span className="text-sm">
-                            Qty: {item.quantity || 0}
-                          </span>
-                          <span className="text-sm">
-                            Price: ${(item.price || 0).toLocaleString()}
-                          </span>
+                          <span className="text-sm">Qty: {itemQuantity}</span>
+                          <span className="text-sm">Price: ${itemPrice.toLocaleString()}</span>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-bold text-lg">
-                          $
-                          {(
-                            (item.price || 0) * (item.quantity || 0)
-                          ).toLocaleString()}
-                        </p>
+                        <p className="font-bold text-lg">${itemTotal.toLocaleString()}</p>
                       </div>
                     </div>
                   );
@@ -385,75 +368,90 @@ export const OrderDetailModal = ({
           </Card>
 
           {/* Order Timeline */}
-          {(fullOrderDetails.timeline || []).map((step, index) => {
-            const Icon = step.icon;
-            return (
-              <div key={index} className="flex items-start gap-4">
-                <div
-                  className={`flex h-10 w-10 items-center justify-center rounded-full border-2 ${
-                    step.completed
-                      ? "bg-green-100 border-green-500 text-green-600"
-                      : step.current
-                      ? "bg-blue-100 border-blue-500 text-blue-600"
-                      : "bg-gray-100 border-gray-300 text-gray-400"
-                  }`}>
-                  <Icon className="h-5 w-5" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p
-                      className={`font-medium ${
-                        step.completed || step.current
-                          ? "text-foreground"
-                          : "text-muted-foreground"
-                      }`}>
-                      {step.status}
-                    </p>
-                    {step.current && <Badge variant="outline">Current</Badge>}
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {step.description}
-                  </p>
-                  {step.date && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {step.date} at {step.time}
-                    </p>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+          {orderTimeline.length > 0 && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Truck className="h-5 w-5" /> Order Timeline
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {orderTimeline.map((step, index) => {
+                  const Icon = step.icon; // Assuming step.icon is a component type
+                  return (
+                    <div key={index} className="flex items-start gap-4">
+                      <div
+                        className={`flex h-10 w-10 items-center justify-center rounded-full border-2 ${
+                          step.completed
+                            ? "bg-green-100 border-green-500 text-green-600"
+                            : step.current
+                            ? "bg-blue-100 border-blue-500 text-blue-600"
+                            : "bg-gray-100 border-gray-300 text-gray-400"
+                        }`}
+                      >
+                        {Icon && <Icon className="h-5 w-5" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p
+                            className={`font-medium ${
+                              step.completed || step.current
+                                ? "text-foreground"
+                                : "text-muted-foreground"
+                            }`}
+                          >
+                            {step.status}
+                          </p>
+                          {step.current && <Badge variant="outline">Current</Badge>}
+                        </div>
+                        {step.description && (
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {step.description}
+                          </p>
+                        )}
+                        {step.date && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {step.date}
+                            {step.time && ` at ${step.time}`}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
+          )}
 
-          <Badge className={getStatusColor(fullOrderDetails.status)}>
-            {fullOrderDetails.status.charAt(0).toUpperCase() +
-              fullOrderDetails.status.slice(1)}
-          </Badge>
 
           {/* Action Buttons */}
-          {fullOrderDetails.status === "pending" && (
-            <Button
-              onClick={() => handleStatusUpdate("confirmed")}
-              disabled={isUpdatingStatus}
-              className="flex items-center">
-              {isUpdatingStatus ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                <>
-                  <CheckCircle className="mr-2 h-4 w-4" />
-                  Confirm Order
-                </>
-              )}
-            </Button>
-          )}
-          {fullOrderDetails.status === "confirmed" && (
-            <Button onClick={() => handleStatusUpdate("delivered")}>
-              <Truck className="h-4 w-4 mr-2" />
-              Mark as Delivered
-            </Button>
-          )}
+          <div className="flex justify-end gap-2"> {/* Container for buttons */}
+            {orderStatus === "pending" && (
+              <Button
+                onClick={() => handleStatusUpdate("confirmed")}
+                disabled={isUpdatingStatus}
+                className="flex items-center"
+              >
+                {isUpdatingStatus ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="mr-2 h-4 w-4" />
+                    Confirm Order
+                  </>
+                )}
+              </Button>
+            )}
+            {orderStatus === "confirmed" && (
+              <Button onClick={() => handleStatusUpdate("delivered")}>
+                <Truck className="h-4 w-4 mr-2" />
+                Mark as Delivered
+              </Button>
+            )}
+          </div>
         </div>
       </DialogContent>
     </Dialog>

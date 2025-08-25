@@ -14,7 +14,7 @@ export const productApi = createApi({
       return headers;
     },
   }),
-  tagTypes: ["Product"],
+  tagTypes: ["Product", "Brand"],
   endpoints: (builder) => ({
     getProducts: builder.query<Product[], void>({
       query: () => "/products",
@@ -28,28 +28,32 @@ export const productApi = createApi({
       query: (id) => `/products/${id}`,
       providesTags: (result, error, id) => [{ type: "Product", id }],
     }),
-    createProduct: builder.mutation<Product, Omit<Product, "id">>({
+    createProduct: builder.mutation<Product, any>({
       query: (productData) => ({
         url: "/products",
         method: "POST",
         body: productData,
       }),
-      invalidatesTags: ["Product"],
+      invalidatesTags: ["Product", "Brand"],
     }),
-    updateProduct: builder.mutation<Product, Product>({
-      query: (productData) => ({
-        url: `/products/${productData._id}`,
+    updateProduct: builder.mutation<
+      Product, 
+      { _id: string; changes: FormData } 
+    >({
+      query: ({ _id, changes }) => ({
+       
+        url: `/products/${_id}`, 
         method: "PUT",
-        body: productData,
+        body: changes, 
       }),
-      invalidatesTags: ["Product"],
+      invalidatesTags: ["Product", "Brand"],
     }),
     deleteProduct: builder.mutation<void, string>({
       query: (id) => ({
         url: `/products/${id}`,
         method: "DELETE",
       }),
-      invalidatesTags: ["Product"],
+      invalidatesTags: ["Product", "Brand"],
     }),
   }),
 });

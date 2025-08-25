@@ -1,24 +1,28 @@
-import React from "react";
+
 import { useNavigate } from "react-router-dom";
-import { useAppDispatch } from "@/hooks/hooks";
-import { createProduct } from "@/features/products/productsSlice";
+
 import ProductForm from "@/component/ProductForm";
 import { toast } from "react-toastify";
 
 export default function CreateProductPage() {
   const navigate = useNavigate();
-  const dispatch = useAppDispatch();
 
-  const handleSubmit = (productData: Record<string, any>) => {
-    dispatch(createProduct(productData))
-      .unwrap()
-      .then(() => {
-        toast.success("Product created successfully!");
-        navigate("/products");
-      })
-      .catch((err) => {
-        toast.error(`Failed to create product: ${err}`);
+
+  const handleSubmit = async (formData: FormData) => {
+    try {
+      // Replace with your actual API endpoint and method
+      const response = await fetch("/products", {
+        method: "POST", // or "PUT" for editing
+        body: formData,
       });
+
+      if (!response.ok) throw new Error("Failed to save product");
+
+      toast.success("Product saved successfully!");
+      navigate("/products");
+    } catch (err) {
+      toast.error("Failed to save product");
+    }
   };
 
   const handleCancel = () => {
