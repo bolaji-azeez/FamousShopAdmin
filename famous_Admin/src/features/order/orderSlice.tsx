@@ -32,10 +32,10 @@ const initialState: OrdersState = {
   totalPages: 1,
 };
 
-// Fetch all orders (Admin)
+
 export const fetchOrders = createAsyncThunk<
   { orders: Order[]; totalPages: number },
-  number, // page number
+  number, 
   { rejectValue: string }
 >("orders/fetchAll", async (page = 1, { rejectWithValue }) => {
   try {
@@ -51,7 +51,6 @@ export const fetchOrders = createAsyncThunk<
   }
 });
 
-// Update order status
 export const updateOrderStatus = createAsyncThunk<
   Order,
   { orderId: string; newStatus: Order["status"] },
@@ -75,7 +74,6 @@ export const updateOrderStatus = createAsyncThunk<
   }
 );
 
-// Fetch single order by ID
 export const fetchOrderById = createAsyncThunk<
   Order,
   string,
@@ -118,7 +116,7 @@ const ordersSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder
-      // Fetch orders
+
       .addCase(fetchOrders.pending, (state) => {
         state.status = "loading";
         state.error = null;
@@ -138,7 +136,7 @@ const ordersSlice = createSlice({
         state.status = "failed";
         state.error = action.payload || "Failed to load orders";
       })
-      // Update order status
+
       .addCase(
         updateOrderStatus.fulfilled,
         (state, action: PayloadAction<Order>) => {
@@ -150,7 +148,7 @@ const ordersSlice = createSlice({
       .addCase(updateOrderStatus.rejected, (state, action) => {
         state.error = action.payload || "Failed to update order status";
       })
-      // Fetch single order
+  
       .addCase(
         fetchOrderById.fulfilled,
         (state, action: PayloadAction<Order>) => {
@@ -160,7 +158,7 @@ const ordersSlice = createSlice({
       .addCase(fetchOrderById.rejected, (state, action) => {
         state.error = action.payload || "Failed to load order";
       })
-      // Fetch order details
+ 
       .addCase(
         orderDetails.fulfilled,
         (state, action: PayloadAction<Order>) => {
@@ -170,7 +168,7 @@ const ordersSlice = createSlice({
       .addCase(orderDetails.rejected, (state, action) => {
         state.error = action.payload || "Failed to load order details";
       });
-    // Reset selected order on logout
+
   },
 });
 

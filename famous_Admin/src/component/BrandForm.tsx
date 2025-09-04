@@ -1,5 +1,13 @@
 import { useState } from 'react';
-import ImageUploader from './ImageUploader';
+
+
+
+type BrandType = {
+  id: string;
+  name: string;
+  description?: string;
+ 
+};
 
 type BrandFormProps = {
   initialData?: BrandType;
@@ -10,7 +18,7 @@ const BrandForm = ({ initialData, onSubmit }: BrandFormProps) => {
   const [brand, setBrand] = useState<BrandType>(initialData || {
     name: '',
     description: '',
-    logo: '',
+    id: ""
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -45,17 +53,7 @@ const BrandForm = ({ initialData, onSubmit }: BrandFormProps) => {
         />
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Brand Logo
-        </label>
-        <ImageUploader
-          image={brand.logo}
-          onImageChange={(logo) => setBrand({...brand, logo})}
-          aspectRatio={1}
-          uploadText="Upload Logo"
-        />
-      </div>
+ 
 
       <div className="flex justify-end">
         <button

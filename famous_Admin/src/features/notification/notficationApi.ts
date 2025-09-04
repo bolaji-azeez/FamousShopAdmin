@@ -1,5 +1,4 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-
 import type { Notification } from "@/types";
 
 export const notificationApi = createApi({
@@ -20,7 +19,7 @@ export const notificationApi = createApi({
       query: () => "/notifications",
       providesTags: (result) =>
         result
-          ? result.map(({ id }) => ({ type: "Notification", id }))
+          ? result.map(({ _id }) => ({ type: "Notification", _id }))
           : ["Notification"],
     }),
     createNotification: builder.mutation<

@@ -36,7 +36,7 @@ const brandSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder
-      // Create Brand
+    
     
     // Delete Brand
       .addCase(deleteBrand.fulfilled, (state, action) => {

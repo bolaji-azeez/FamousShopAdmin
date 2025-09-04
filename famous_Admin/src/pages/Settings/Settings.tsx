@@ -32,7 +32,7 @@ export default function SettingsPage() {
   
   const { status,token } = useAppSelector((state) => state.adminAuth); 
 
-  console.log(token)
+
   
 const handlePasswordChange = async (e: React.FormEvent) => {
   e.preventDefault();

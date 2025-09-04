@@ -1,3 +1,9 @@
+export interface ProductImage {
+  url: string;
+  alt?: string;
+  id?: string;
+}
+
 export interface Product {
   _id: string;
   name: string;
@@ -5,18 +11,17 @@ export interface Product {
   description: string;
   price: number;
   brand: string;
-  images: Array<{
-    url: string;
-    imageId: string;
-    _id: string;
-  }>;
+  images: ProductImage[];       
   quantity: number;
+  salesData?: string;
   features: string[];
   status: "active" | "draft" | "archived";
   createdAt: string;
   updatedAt?: string;
   __v: number;
 }
+
+
 
 export type ProductTableItem = Pick<
   Product,
@@ -32,7 +37,12 @@ export interface ApiResponse<T> {
   data: T;
   message?: string;
   success: boolean;
+   user: User;   
 }
+
+
+
+
 
 export interface Brand {
   _id: string;
@@ -75,7 +85,7 @@ export interface User {
 }
 
 export interface Notification {
-  id: string;
+  _id: string;
   message: string;
   type: "info" | "success" | "error";
   createdAt: string;
@@ -92,7 +102,6 @@ export interface Order {
       quantity: number;
       price: number;
       image: string;
-      _id: string;
       name: string;
       brand: string;
     }>;

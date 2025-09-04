@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import {
-   useGetBrandsQuery,
+  useGetBrandsQuery,
   useCreateBrandMutation,
   useDeleteBrandMutation,
 } from "@/features/brand/brandApi";
@@ -36,13 +36,18 @@ export default function BrandsPage() {
   // const [brandName, setBrandName] = useState("");
 
   // interface Brand {
-  //   _id: string;  
+  //   _id: string;
   //   name: string;
   //   brandId?: string; // Optional field for brand ID
   //   createdAt?: string;
   //   updatedAt?: string;
   // }
-  const {data:getBrands = [], isLoading, isError, error } = useGetBrandsQuery();
+  const {
+    data: getBrands = [],
+    isLoading,
+    isError,
+    error,
+  } = useGetBrandsQuery();
   const [createBrand, { isLoading: isCreating }] = useCreateBrandMutation();
   const [deleteBrand] = useDeleteBrandMutation();
   const [brandName, setBrandName] = useState("");
@@ -52,7 +57,6 @@ export default function BrandsPage() {
       toast.error("Brand name cannot be empty");
       return;
     }
-
     try {
       await createBrand({ name: brandName }).unwrap();
       toast.success("Brand created successfully!");
@@ -60,21 +64,20 @@ export default function BrandsPage() {
       setIsBrandDialogOpen(false);
     } catch (err) {
       toast.error("Failed to create brand");
-      console.log(err)
+      console.log(err);
     }
   };
 
-  const handleDeleteBrand = async (id: string) => {
+  const handleDeleteBrand = async (_id: string) => {
     if (confirm("Are you sure you want to delete this brand?")) {
       try {
-        await deleteBrand(id).unwrap();
+        await deleteBrand(_id).unwrap();
         toast.success("Brand deleted successfully!");
-      } catch (err) {
+      } catch {
         toast.error("Failed to delete brand");
       }
     }
   };
-  
 
   // const handleGetBrands = async () => {
   //   try {

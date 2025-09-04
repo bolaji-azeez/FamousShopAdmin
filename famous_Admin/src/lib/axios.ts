@@ -1,17 +1,19 @@
 // src/lib/axios.ts
 import axios from "axios";
+import type { RootState } from "@/store/store";
+
 
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_APP_API_BASE_URL || "http://localhost:3000/api", // fallback
   headers: {
     "Content-Type": "application/json",
   },
-  withCredentials: true, // if you're using cookies (auth/session)
+  withCredentials: true, 
 });
 
 export const setupApiClient = (store: { getState: () => RootState }) => {
   apiClient.interceptors.request.use((config) => {
-    const token = store.getState().auth.token;
+    const token = store.getState().adminAuth.token;
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
