@@ -11,7 +11,7 @@ import {
   useDeleteProductMutation,
 } from "@/features/products/productApi";
 
-import { Plus, MoreHorizontal, Edit, Trash2, Star } from "lucide-react";
+import { Plus, MoreHorizontal, Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -52,29 +52,41 @@ export default function ProductsPage() {
   const [quantity, setQuantity] = useState("");
   const [description, setDescription] = useState("");
   const [features, setFeatures] = useState("");
-
   const [images, setImages] = useState<string[]>([]);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
 
   // RTK Query hooks
-  const { data: products = [], isLoading, isError } = useGetProductsQuery();
+  const { data: products = [] } = useGetProductsQuery();
   const { data: brands = [] } = useGetBrandsQuery();
   const [createProduct, { isLoading: isCreating }] = useCreateProductMutation();
   const [updateProduct, { isLoading: isUpdating }] = useUpdateProductMutation();
   const [deleteProduct] = useDeleteProductMutation();
+  const naira = new Intl.NumberFormat("en-NG", {
+    style: "currency",
+    currency: "NGN",
+  }).format;
+
   const handleSubmit = async () => {
     const formData = new FormData();
     formData.append("name", productName);
+    if (!editingProduct && selectedBrand === "all") {
+      toast.error("Please select a brand");
+      return;
+    }
     formData.append("brand", selectedBrand);
     formData.append("price", price);
     formData.append("quantity", quantity);
     formData.append("description", description);
-    formData.append("features", features);
-    formData.append("status", "active");
-    imageFiles.forEach((file) => {
-      formData.append("images", file);
-    });
+
+    const featureList = features
+      .split(",")
+      .map((f) => f.trim())
+      .filter(Boolean);
+    featureList.forEach((f) => formData.append("features", f));
+
+    images.forEach((url) => formData.append("existingImageUrls", url));
+    imageFiles.forEach((file) => formData.append("images", file));
 
     try {
       if (editingProduct) {
@@ -89,7 +101,7 @@ export default function ProductsPage() {
       }
       setIsProductDialogOpen(false);
       resetForm();
-    } catch (error) {
+    } catch {
       toast.error("Operation failed");
     }
   };
@@ -116,7 +128,7 @@ export default function ProductsPage() {
       try {
         await deleteProduct(id).unwrap();
         toast.success("Product deleted");
-      } catch (error) {
+      } catch {
         toast.error("Deletion failed");
       }
     }
@@ -333,16 +345,12 @@ export default function ProductsPage() {
                     {product.description}
                   </p>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-2xl font-bold">₦{product.price}</span>
-                  <div className="flex items-center space-x-1">
-                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                   
-                  </div>
-                </div>
+
                 <div className="flex items-center justify-between text-sm">
-                  <span>Quantity: {product.quantity}</span>
-                  <span>Quantity: {product.quantity}</span>
+                  <span className="text-2xl font-bold">
+                    {naira(product.price)}
+                  </span>
+
                   <Badge
                     variant={
                       product.status === "active" ? "default" : "secondary"

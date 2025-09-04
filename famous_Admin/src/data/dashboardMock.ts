@@ -8,16 +8,7 @@ import {
   Settings,
   Home,
   Tag,
-  Star,
-  Eye,
-  Plus,
-  MoreHorizontal,
-  Edit,
-  Trash2,
-  Check,
-  X,
-  Upload,
-  Save,
+
 } from "lucide-react";
 
 export interface SidebarItem {

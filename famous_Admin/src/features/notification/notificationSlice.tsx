@@ -1,6 +1,7 @@
 import {createSlice, createAsyncThunk} from "@reduxjs/toolkit"
 import type { Notification } from "@/types";
 import api from "../../api/api";
+import { AxiosError } from "axios";
 
 
 interface NotificationState {
@@ -15,47 +16,52 @@ const initialState: NotificationState = {
   error: null,
 };
 
-export const fetchNotifications = createAsyncThunk(
-  "notifications/fetchNotifications",
-  async (_, { rejectWithValue }) => {
-    try {
-      const response = await api.get("/notifications");
-      return response.data;
-    } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch notifications"
-      );
-    }
-  }
-);
+const getErrorMessage = (e: unknown, fallback = "Request failed") => {
+  const err = e as AxiosError<{ message?: string }>;
+  return err?.response?.data?.message ?? err?.message ?? fallback;
+};
 
-export const createNotification = createAsyncThunk(
-  "notifications/createNotification",
-  async (notificationData: Omit<Notification, "id">, { rejectWithValue }) => {
-    try {
-      const response = await api.post("/notifications", notificationData);
-      return response.data;
-    } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to create notification"
-      );
-    }
-  }
-);
+type ApiResponse<T> = { data: T; message?: string };
 
-export const deleteNotification = createAsyncThunk(
-  "notifications/deleteNotification",
-  async (notificationId: string, { rejectWithValue }) => {
-    try {
-      await api.delete(`/notifications/${notificationId}`);
-      return notificationId; // Return the notification ID for deletion
-    } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to delete notification"
-      );
-    }
+export const fetchNotifications = createAsyncThunk<
+  Notification[],
+  void,
+  { rejectValue: string }
+>("notifications/fetchNotifications", async (_arg, { rejectWithValue }) => {
+  try {
+    const response = await api.get<ApiResponse<Notification[]>>("/notifications");
+    return response.data.data;
+  } catch (e) {
+    return rejectWithValue(getErrorMessage(e, "Failed to fetch notifications"));
   }
-);
+});
+
+export const createNotification = createAsyncThunk<
+  Notification,
+  Omit<Notification, "id">,
+  { rejectValue: string }
+>("notifications/createNotification", async (notificationData, { rejectWithValue }) => {
+  try {
+    const response = await api.post<ApiResponse<Notification>>("/notifications", notificationData);
+    return response.data.data;
+  } catch (e) {
+    return rejectWithValue(getErrorMessage(e, "Failed to create notification"));
+  }
+});
+
+export const deleteNotification = createAsyncThunk<
+  string,
+  string,
+  { rejectValue: string }
+>("notifications/deleteNotification", async (notificationId, { rejectWithValue }) => {
+  try {
+    await api.delete<ApiResponse<null>>(`/notifications/${notificationId}`);
+    return notificationId;
+  } catch (e) {
+    return rejectWithValue(getErrorMessage(e, "Failed to delete notification"));
+  }
+});
+
 
 const notificationSlice = createSlice({
   name: "notifications",
@@ -91,7 +97,7 @@ const notificationSlice = createSlice({
       .addCase(deleteNotification.fulfilled, (state, action) => {
         state.status = "succeeded";
         state.items = state.items.filter(
-          (notification) => notification.id !== action.payload
+          (notification) => notification._id !== action.payload
         );
       })
       .addCase(deleteNotification.rejected, (state, action) => {

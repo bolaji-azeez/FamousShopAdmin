@@ -6,7 +6,7 @@ const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   const { isAuthenticated } = useAuth();
 
   if (!isAuthenticated) {
-    // Redirect to /admin/login if not authenticated
+   
     return <Navigate to="/admin/login" replace />;
   }
 

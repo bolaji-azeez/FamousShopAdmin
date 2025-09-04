@@ -79,7 +79,7 @@ const AdminLogin = () => {
   };
 
   return (
-    <div className="py-20 flex items-center justify-center bg-gray-100">
+    <div className="py-20 flex items-center justify-center bg-gray-100 h-100vh">
       <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
         <h2 className="text-2xl font-bold mb-6 text-center">Admin Login</h2>
 

@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import { FiUpload, FiX } from "react-icons/fi";
 
 type ImageUploaderProps = {
-  images: string[]; // always use array for consistency
+  images: string[]; 
   onImagesChange?: (images: string[]) => void;
   onFilesChange?: (files: File[]) => void;
   multiple?: boolean;

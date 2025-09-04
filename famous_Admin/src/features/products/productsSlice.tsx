@@ -5,6 +5,8 @@ import {
 } from "@reduxjs/toolkit";
 import apiClient from "../../lib/axios";
 import type { Product } from "@/types";
+import type { AxiosError } from "axios";
+
 
 //  interface Product {
 //   _id: string;
@@ -34,66 +36,69 @@ const initialState: ProductState = {
   status: "idle",
   error: null,
 };
+
+const getErrorMessage = (e: unknown, fallback = "Request failed") => {
+  const err = e as AxiosError<{ message?: string }>;
+  return err?.response?.data?.message ?? err?.message ?? fallback;
+};
 // 🔁 Thunks
 
-export const fetchProducts = createAsyncThunk<Product[]>(
-  "products/fetchAll",
-  async (_, { rejectWithValue }) => {
-    try {
-      const res = await apiClient.get("/products");
-      return res.data;
-    } catch (err: any) {
-      return rejectWithValue(
-        err.response?.data?.message || "Failed to fetch products"
-      );
-    }
+type ApiResponse<T> = { data: T; message?: string };
+
+export const fetchProducts = createAsyncThunk<
+  Product[],
+  void,
+  { rejectValue: string }
+>("products/fetchAll", async (_arg, { rejectWithValue }) => {
+  try {
+    const res = await apiClient.get<ApiResponse<Product[]>>("/products");
+    return res.data.data; // unwrap
+  } catch (e) {
+    return rejectWithValue(getErrorMessage(e, "Failed to fetch products"));
   }
-);
+});
 
 export const createProduct = createAsyncThunk<
   Product,
-  Omit<Product, "productId">
+  Omit<Product, "productId">,
+  { rejectValue: string }
 >("products/create", async (productData, { rejectWithValue }) => {
   try {
-    const res = await apiClient.post("/products", productData);
-    return res.data;
-  } catch (err: any) {
-    return rejectWithValue(
-      err.response?.data?.message || "Failed to create product"
-    );
+    const res = await apiClient.post<ApiResponse<Product>>("/products", productData);
+    return res.data.data;
+  } catch (e) {
+    return rejectWithValue(getErrorMessage(e, "Failed to create product"));
   }
 });
 
 export const updateProduct = createAsyncThunk<
   Product,
-  { id: string; updates: Partial<Product> }
+  { id: string; updates: Partial<Product> },
+  { rejectValue: string }
 >("products/update", async ({ id, updates }, { rejectWithValue }) => {
   try {
-    const res = await apiClient.put(`/products/${id}`, updates);
-
-    return res.data;
-  } catch (err: any) {
-    return rejectWithValue(
-      err.response?.data?.message || "Failed to update product"
-    );
+    const res = await apiClient.put<ApiResponse<Product>>(`/products/${id}`, updates);
+    return res.data.data;
+  } catch (e) {
+    return rejectWithValue(getErrorMessage(e, "Failed to update product"));
   }
 });
 
-export const deleteProduct = createAsyncThunk<string, string>(
-  "products/delete",
-  async (id, { rejectWithValue }) => {
-    try {
-      await apiClient.delete(`/products/${id}`);
-      return id;
-    } catch (err: any) {
-      return rejectWithValue(
-        err.response?.data?.message || "Failed to delete product"
-      );
-    }
+export const deleteProduct = createAsyncThunk<
+  string,
+  string,
+  { rejectValue: string }
+>("products/delete", async (id, { rejectWithValue }) => {
+  try {
+    await apiClient.delete<ApiResponse<null>>(`/products/${id}`);
+    return id;
+  } catch (e) {
+    return rejectWithValue(getErrorMessage(e, "Failed to delete product"));
   }
-);
+});
 
-// 🔧 Slice
+
+
 const productsSlice = createSlice({
   name: "products",
   initialState,

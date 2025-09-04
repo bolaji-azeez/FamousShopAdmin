@@ -1,31 +1,38 @@
 // src/features/auth/authSlice.ts
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import type { AxiosError } from "axios";
 import { login } from "../../service/authService";
 import apiClient from "@/lib/axios";
-
 
 interface DashboardData {
   totalUser: number;
   totalProducts: number;
   totalOrders: number;
-  monthlySalesData: any[]; 
-  salesOverview: any[]; 
+  monthlySalesData: unknown[]; 
+  salesOverview: unknown[];  
 }
 
 interface AuthState {
-  user: string | null; 
+  user: string | null;
   token: string | null;
   status: "idle" | "loading" | "succeeded" | "failed";
+  loading: boolean;
   error: string | null;
-  dashboardData: DashboardData | null; 
+  dashboardData: DashboardData | null;
 }
+
+
+export interface RootState {
+  adminAuth: AuthState;
+}
+
 const initialState: AuthState = {
   user: null,
   token: null,
   status: "idle",
+  loading: false,
   error: null,
   dashboardData: {
-    // This is the default empty state
     totalUser: 0,
     totalProducts: 0,
     totalOrders: 0,
@@ -39,90 +46,91 @@ export interface LoginCredentials {
   password: string;
 }
 
+export interface LoginSuccess {
+  token: string;
+  user: string; // adjust if your API returns more
+}
+
 export interface ChangePasswordData {
- currentPassword: string;
+  currentPassword: string;
   newPassword: string;
 }
 
-export const loginAdmin = createAsyncThunk(
-  "admin/login",
-  async (credentials: LoginCredentials, { rejectWithValue }) => {
-    try {
-      const data = await login(credentials);
-      return data;
-    } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || "Login failed");
-    }
-  }
-);
+export interface ChangePasswordResponse {
+  message?: string;
+  token?: string; 
+}
 
-export const changeAdminPassword = createAsyncThunk(
-  "auth/changePassword",
-  async (
-    passwordData: {currentPassword: string, newPassword: string },
-    { getState, rejectWithValue }
-  ) => {
-    try {
-      const { adminAuth } = getState() as { adminAuth: AuthState }; // Type assertion for getState
-      const response = await apiClient.post(
-        "/admin/change-password",
-        passwordData,
-        {
-          headers: {
-            Authorization: `Bearer ${adminAuth.token}`,
-          },
-        }
-      );
-      console.log("Password change successful:", response.data);
-      return response.data;
-    } catch (error) {
-       console.log("Raw error:", error); // Add this line
+const getAxiosMessage = (err: unknown, fallback = "Request failed") => {
+  const ax = err as AxiosError<{ message?: string }>;
+  return ax?.response?.data?.message ?? ax?.message ?? fallback;
+};
+
+
+export const loginAdmin = createAsyncThunk<
+  LoginSuccess,
+  LoginCredentials,
+  { rejectValue: string }
+>("admin/login", async (credentials, { rejectWithValue }) => {
+  try {
+    const data = await login(credentials); 
+    return data as LoginSuccess;
+  } catch (err: unknown) {
+    return rejectWithValue(getAxiosMessage(err, "Login failed"));
+  }
+});
+
+export const changeAdminPassword = createAsyncThunk<
+  ChangePasswordResponse,
+  ChangePasswordData,
+  { state: RootState; rejectValue: string }
+>("auth/changePassword", async (passwordData, { getState, rejectWithValue }) => {
+  try {
+    const { adminAuth } = getState(); 
+    const { data } = await apiClient.post<ChangePasswordResponse>(
+      "/admin/change-password",
+      passwordData,
+      { headers: { Authorization: `Bearer ${adminAuth.token}` } }
+    );
+    return data;
+  } catch (err: unknown) {
+    return rejectWithValue(getAxiosMessage(err, "Password change failed"));
+  }
+});
+
+export const fetchDashboardOverview = createAsyncThunk<
+  DashboardData,
+  void,
+  { state: RootState; rejectValue: string }
+>("auth/fetchDashboardOverview", async (_arg, { getState, rejectWithValue }) => {
+  try {
+    const { adminAuth } = getState(); 
+    const { data } = await apiClient.get<DashboardData>("/admin/overview", {
+      headers: { Authorization: `Bearer ${adminAuth.token}` },
+    });
+    return data;
+  } catch (err: unknown) {
+    const ax = err as AxiosError<{ message?: string }>;
+    if (ax.response) {
       return rejectWithValue(
-        error.response?.data?.message || "Password change failed"
+        ax.response.data?.message ??
+          `Server error: ${ax.response.status}`
       );
     }
+    if (ax.request) return rejectWithValue("Network error: No response from server");
+    return rejectWithValue(`Request setup error: ${ax.message ?? "Unknown error"}`);
   }
-);
-
-export const fetchDashboardOverview = createAsyncThunk(
-  "auth/fetchDashboardOverview",
-  async (_, { getState, rejectWithValue }) => {
-    try {
-      const { auth } = getState() as { auth: AuthState };
-      const response = await apiClient.get("/admin/overview", {
-        headers: {
-          // If state.auth.token is something like "\"abc...xyz\"", this will be invalid.
-          Authorization: `Bearer ${auth.token}`,
-        },
-      });
-
-      return response.data as DashboardData;
-    } catch (error: any) {
-      if (error.response) {
-        const errorMessage =
-          error.response.data?.message ||
-          `Server error: ${error.response.status}`;
-        return rejectWithValue(errorMessage);
-      } else if (error.request) {
-        return rejectWithValue("Network error: No response from server");
-      } else {
-        return rejectWithValue(`Request setup error: ${error.message}`);
-      }
-    }
-  }
-);
+});
 
 const authSlice = createSlice({
-  name: "adminAuth", // Name of the slice
+  name: "adminAuth",
   initialState,
   reducers: {
     logout: (state) => {
-      // REMOVED: localStorage.removeItem("authToken"); // Rely on redux-persist
       state.user = null;
       state.token = null;
       state.status = "idle";
       state.error = null;
-      // Reset dashboardData to the initial empty state on logout
       state.dashboardData = {
         totalUser: 0,
         totalProducts: 0,
@@ -132,64 +140,64 @@ const authSlice = createSlice({
       };
     },
   },
-
   extraReducers: (builder) => {
     builder
       .addCase(loginAdmin.pending, (state) => {
         state.status = "loading";
         state.error = null;
       })
-      .addCase(loginAdmin.fulfilled, (state, action) => {
+      .addCase(loginAdmin.fulfilled, (state, action: PayloadAction<LoginSuccess>) => {
         state.status = "succeeded";
-        state.user = action.payload.user;
-        state.token = action.payload.token; // Redux-persist will save this token
+        state.token = action.payload.token;
+        if (action.payload.user) state.user = action.payload.user;
         state.error = null;
       })
-     .addCase(loginAdmin.rejected, (state, action) => {
-      state.status = "failed";
-      state.error = action.payload as string;
-      state.user = null;
-      state.token = null;
-      state.dashboardData = initialState.dashboardData;
-    })
+      .addCase(loginAdmin.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.payload ?? "Login failed";
+        state.user = null;
+        state.token = null;
+        state.dashboardData = initialState.dashboardData;
+      })
+
       .addCase(changeAdminPassword.pending, (state) => {
         state.status = "loading";
         state.error = null;
       })
-     .addCase(changeAdminPassword.fulfilled, (state, action) => {
-  state.status = "succeeded";
-  state.error = null;
-  // If backend returns a new token:
-  if (action.payload.token) {
-    state.token = action.payload.token;
-  }
-})
+      .addCase(
+        changeAdminPassword.fulfilled,
+        (state, action: PayloadAction<ChangePasswordResponse>) => {
+          state.status = "succeeded";
+          state.error = null;
+          if (action.payload.token) {
+            state.token = action.payload.token;
+          }
+        }
+      )
       .addCase(changeAdminPassword.rejected, (state, action) => {
         state.status = "failed";
-        state.error = action.payload as string;
+        state.error = action.payload ?? "Password change failed";
       })
+
       .addCase(fetchDashboardOverview.pending, (state) => {
         state.status = "loading";
         state.error = null;
       })
-      .addCase(fetchDashboardOverview.fulfilled, (state, action) => {
-        state.status = "succeeded";
-        if (action.payload) {
-          state.dashboardData = action.payload;
-        } else {
-          state.dashboardData = initialState.dashboardData;
+      .addCase(
+        fetchDashboardOverview.fulfilled,
+        (state, action: PayloadAction<DashboardData>) => {
+          state.status = "succeeded";
+          state.dashboardData = action.payload ?? initialState.dashboardData;
+          state.error = null;
         }
-        state.error = null;
-      })
+      )
       .addCase(fetchDashboardOverview.rejected, (state, action) => {
         state.status = "failed";
-        state.error = action.payload as string;
-        state.dashboardData = initialState.dashboardData; // Reset to zeros on fetch failure
+        state.error = action.payload ?? "Failed to fetch dashboard";
+        state.dashboardData = initialState.dashboardData;
       });
   },
 });
 
 export const { logout } = authSlice.actions;
 export default authSlice.reducer;
-
-

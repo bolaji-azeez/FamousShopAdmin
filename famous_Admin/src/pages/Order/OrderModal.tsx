@@ -1,8 +1,17 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ComponentType } from "react";
+
 import { LoadingSpinner } from "@/component/loadingSpinner";
 import { ErrorDisplay } from "@/component/ErrorDisplay";
-import { Package, User, MapPin, Truck, CheckCircle } from "lucide-react";
+import {
+  Package,
+  User,
+  MapPin,
+  Truck,
+  CheckCircle,
+  Loader2,
+} from "lucide-react";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -15,21 +24,21 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Loader2 } from "lucide-react";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
 import {
   useGetOrderByIdQuery,
   useUpdateOrderStatusMutation,
-
 } from "@/features/order/orderApi";
 
+type OrderStatus = "pending" | "confirmed" | "delivered";
 
 type TimelineStep = {
   status: string;
   description?: string;
   date?: string;
   time?: string;
-  icon?: React.ElementType;
+  icon?: ComponentType<{ className?: string }>;
   completed?: boolean;
   current?: boolean;
 };
@@ -48,7 +57,7 @@ type OrderUser = {
   _id: string;
   fullName: string;
   email: string;
-  phoneNumber: number;
+  phoneNumber?: number;
 };
 
 type ShippingAddress = {
@@ -69,7 +78,7 @@ type Shipping = {
 type FullOrder = {
   _id: string;
   orderId: number;
-  status: "pending" | "confirmed" | "delivered";
+  status: OrderStatus;
   totalQuantity: number;
   totalPrice: number;
   createdAt: string;
@@ -84,21 +93,33 @@ type FullOrder = {
 type OrderModalProps = {
   isOpen: boolean;
   onClose: () => void;
-  orderId: string;
+  orderId: string | null;
 };
+
+const getRtkErrorMessage = (err: unknown) => {
+  if (typeof err === "string") return err;
+  return (err as Error)?.message ?? "Something went wrong";
+};
+
+const ngn = new Intl.NumberFormat("en-NG", {
+  style: "currency",
+  currency: "NGN",
+}).format;
 
 export const OrderDetailModal = ({
   isOpen,
   onClose,
   orderId,
 }: OrderModalProps) => {
-
   const {
     data: orderDetails,
     isLoading,
     isError,
-    error, 
-  } = useGetOrderByIdQuery(orderId);
+    error,
+  } = useGetOrderByIdQuery(orderId as string, {
+    skip: !isOpen || !orderId, 
+    refetchOnMountOrArgChange: true,
+  });
 
   const DEFAULT_ORDER: FullOrder = {
     _id: "",
@@ -120,34 +141,29 @@ export const OrderDetailModal = ({
     shipping: undefined,
   };
 
-  const [fullOrderDetails, setFullOrderDetails] = useState<FullOrder>(DEFAULT_ORDER);
+  const [fullOrderDetails, setFullOrderDetails] =
+    useState<FullOrder>(DEFAULT_ORDER);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
   const [updateOrderStatus] = useUpdateOrderStatusMutation();
 
- 
-  useEffect(() => {
-    if (orderDetails) {
-  
-      setFullOrderDetails(orderDetails as FullOrder);
-    }
-   
-  }, [orderDetails]);
-
-  
   useEffect(() => {
     if (isError) {
-      console.error("Error fetching order details:", error); 
+      console.error("Error fetching order details:", error);
     }
-   
-  }, [isError, error]); 
+  }, [isError, error]);
 
-  const handleStatusUpdate = async (newStatus: string) => {
-    // Ensure fullOrderDetails._id is valid before proceeding
+  useEffect(() => {
+    if (orderDetails) {
+      setFullOrderDetails(orderDetails as FullOrder);
+    }
+  }, [orderDetails]);
+
+  const handleStatusUpdate = async (newStatus: OrderStatus) => {
     if (!fullOrderDetails._id) {
-        console.error("Cannot update status: Order ID is missing.");
-        toast.error("Cannot update status: Order ID is missing.");
-        return;
+      console.error("Cannot update status: Order ID is missing.");
+      toast.error("Cannot update status: Order ID is missing.");
+      return;
     }
 
     setIsUpdatingStatus(true);
@@ -156,26 +172,82 @@ export const OrderDetailModal = ({
         orderId: fullOrderDetails._id,
         status: newStatus,
       }).unwrap();
-
-      setFullOrderDetails((prev) => ({
-        ...prev,
-        status: newStatus, 
-      }));
-      toast.success(`Order status updated to ${newStatus}`); // User feedback
-    } catch (error) {
-      console.error("Status update failed:", error);
-   
-       if (error && typeof error === 'object' && 'data' in error && typeof error.data === 'object' && error.data && 'message' in error.data) {
-          toast.error(`Failed to update status: ${error.data.message}`);
-      } else {
-          toast.error("Failed to update status");
-      }
+      setFullOrderDetails((prev) => ({ ...prev, status: newStatus }));
+      toast.success(`Order status updated to ${newStatus}`);
+    } catch (err) {
+      console.error("Status update failed:", err);
+      toast.error(`Failed to update status: ${getRtkErrorMessage(err)}`);
     } finally {
       setIsUpdatingStatus(false);
     }
   };
 
-  console.log(orderDetails, "This is order details");
+  if (isLoading) {
+    return (
+      <Dialog
+        open={isOpen}
+        onOpenChange={(open) => {
+          if (!open) onClose();
+        }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              <VisuallyHidden>Loading order</VisuallyHidden>
+            </DialogTitle>
+            <DialogDescription>
+              <VisuallyHidden>Fetching order details…</VisuallyHidden>
+            </DialogDescription>
+          </DialogHeader>
+          <LoadingSpinner />
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  if (isError || !orderDetails) {
+    return (
+      <Dialog
+        open={isOpen}
+        onOpenChange={(open) => {
+          if (!open) onClose();
+        }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              <VisuallyHidden>Order error</VisuallyHidden>
+            </DialogTitle>
+            <DialogDescription>
+              <VisuallyHidden>
+                There was an error loading the order
+              </VisuallyHidden>
+            </DialogDescription>
+          </DialogHeader>
+          <ErrorDisplay message={getRtkErrorMessage(error)} />
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  
+  if (orderDetails) {
+   
+    console.log(orderDetails, "This is order details");
+  }
+
+  const orderIdToDisplay =
+    fullOrderDetails.orderId || fullOrderDetails._id || "N/A";
+  const orderDate = fullOrderDetails.createdAt
+    ? new Date(fullOrderDetails.createdAt).toLocaleDateString()
+    : "Unknown date";
+  const userFullName = fullOrderDetails.userId?.fullName || "Unknown Customer";
+  const userEmail = fullOrderDetails.userId?.email || "No email provided";
+  const userPhoneNumber =
+    fullOrderDetails.userId?.phoneNumber || "No phone provided";
+  const shippingAddress = fullOrderDetails.shippingAddress;
+  const shipping = fullOrderDetails.shipping;
+  const orderProducts = fullOrderDetails.products || [];
+  const orderTimeline = fullOrderDetails.timeline || [];
+  const orderStatus = fullOrderDetails.status || "pending";
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -190,47 +262,19 @@ export const OrderDetailModal = ({
     }
   };
 
-  if (isLoading) {
-    return (
-      <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent>
-          <LoadingSpinner />
-        </DialogContent>
-      </Dialog>
-    );
-  }
-
-  if (isError || !orderDetails) { 
-    return (
-      <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent>
-          <ErrorDisplay message={error?.toString() || "Failed to load order details"} />
-        </DialogContent>
-      </Dialog>
-    );
-  }
-
-  const orderIdToDisplay = fullOrderDetails.orderId || fullOrderDetails._id || 'N/A';
-  const orderDate = fullOrderDetails.createdAt
-    ? new Date(fullOrderDetails.createdAt).toLocaleDateString()
-    : "Unknown date";
-  const userFullName = fullOrderDetails.userId?.fullName || "Unknown Customer";
-  const userEmail = fullOrderDetails.userId?.email || "No email provided";
-  const userPhoneNumber = fullOrderDetails.userId?.phoneNumber || "No phone provided";
-  const shippingAddress = fullOrderDetails.shippingAddress;
-  const shipping = fullOrderDetails.shipping;
-  const orderProducts = fullOrderDetails.products || [];
-  const orderTimeline = fullOrderDetails.timeline || [];
-  const orderStatus = fullOrderDetails.status || "pending";
-
-
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader className="pb-4">
           <div className="flex items-center justify-between">
             <div>
-              <DialogTitle className="text-2xl font-bold">Order Details</DialogTitle>
+              <DialogTitle className="text-2xl font-bold">
+                Order Details
+              </DialogTitle>
               <DialogDescription className="text-base mt-1">
                 Order #{orderIdToDisplay} • Placed on {orderDate}
               </DialogDescription>
@@ -262,7 +306,9 @@ export const OrderDetailModal = ({
                 <div>
                   <p className="font-semibold">{userFullName}</p>
                   <p className="text-sm text-muted-foreground">{userEmail}</p>
-                  <p className="text-sm text-muted-foreground">{userPhoneNumber}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {userPhoneNumber}
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -291,7 +337,7 @@ export const OrderDetailModal = ({
               </Card>
             )}
 
-            {shipping && ( // Check if shipping info exists
+            {shipping && (
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center gap-2 text-lg">
@@ -300,22 +346,36 @@ export const OrderDetailModal = ({
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Method:</span>
-                    <span className="text-sm font-medium">{shipping.method || "N/A"}</span>
+                    <span className="text-sm text-muted-foreground">
+                      Method:
+                    </span>
+                    <span className="text-sm font-medium">
+                      {shipping.method || "N/A"}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Cost:</span>
                     <span className="text-sm font-medium">
-                      {shipping.cost !== undefined ? `$${shipping.cost.toLocaleString()}` : "N/A"}
+                      {shipping.cost !== undefined
+                        ? `$${shipping.cost.toLocaleString()}`
+                        : "N/A"}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Estimated Delivery:</span>
-                    <span className="text-sm font-medium">{shipping.estimatedDelivery || "N/A"}</span>
+                    <span className="text-sm text-muted-foreground">
+                      Estimated Delivery:
+                    </span>
+                    <span className="text-sm font-medium">
+                      {shipping.estimatedDelivery || "N/A"}
+                    </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Tracking:</span>
-                    <span className="text-sm font-mono">{shipping.trackingNumber || "N/A"}</span>
+                    <span className="text-sm text-muted-foreground">
+                      Tracking:
+                    </span>
+                    <span className="text-sm font-mono">
+                      {shipping.trackingNumber || "N/A"}
+                    </span>
                   </div>
                 </CardContent>
               </Card>
@@ -326,29 +386,35 @@ export const OrderDetailModal = ({
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-lg">
-                <Package className="h-5 w-5" /> Order Items ({fullOrderDetails.totalQuantity || 0})
+                <Package className="h-5 w-5" /> Order Items (
+                {fullOrderDetails.totalQuantity || 0})
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {orderProducts.map((item) => {
-                  // Safely render item if data is valid
                   if (!item || !item.productId) return null;
                   const itemPrice = item.price || 0;
                   const itemQuantity = item.quantity || 0;
                   const itemTotal = itemPrice * itemQuantity;
 
                   return (
-                    <div key={item._id} className="flex items-center gap-4 p-4 border rounded-lg">
+                    <div
+                      key={item._id}
+                      className="flex items-center gap-4 p-4 border rounded-lg">
                       <div className="flex-1">
-                        <h4 className="font-semibold">{item.productId.name || "Unknown Product"}</h4>
+                        <h4 className="font-semibold">
+                          {item.productId.name || "Unknown Product"}
+                        </h4>
                         <div className="flex items-center gap-4 mt-2">
                           <span className="text-sm">Qty: {itemQuantity}</span>
-                          <span className="text-sm">Price: ${itemPrice.toLocaleString()}</span>
+                          <span className="text-sm">
+                            Price: {ngn(itemPrice)}
+                          </span>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-bold text-lg">${itemTotal.toLocaleString()}</p>
+                        <p className="font-bold text-lg">{ngn(itemTotal)}</p>
                       </div>
                     </div>
                   );
@@ -357,11 +423,10 @@ export const OrderDetailModal = ({
 
               <Separator className="my-4" />
 
-              {/* Order Totals */}
               <div className="space-y-2">
                 <div className="flex justify-between font-bold text-lg">
                   <span>Total:</span>
-                  <span>${fullOrderDetails.totalPrice.toLocaleString()}</span>
+                  <span>{ngn(fullOrderDetails.totalPrice)}</span>
                 </div>
               </div>
             </CardContent>
@@ -377,7 +442,7 @@ export const OrderDetailModal = ({
               </CardHeader>
               <CardContent className="space-y-4">
                 {orderTimeline.map((step, index) => {
-                  const Icon = step.icon; // Assuming step.icon is a component type
+                  const Icon = step.icon;
                   return (
                     <div key={index} className="flex items-start gap-4">
                       <div
@@ -387,8 +452,7 @@ export const OrderDetailModal = ({
                             : step.current
                             ? "bg-blue-100 border-blue-500 text-blue-600"
                             : "bg-gray-100 border-gray-300 text-gray-400"
-                        }`}
-                      >
+                        }`}>
                         {Icon && <Icon className="h-5 w-5" />}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -398,11 +462,12 @@ export const OrderDetailModal = ({
                               step.completed || step.current
                                 ? "text-foreground"
                                 : "text-muted-foreground"
-                            }`}
-                          >
+                            }`}>
                             {step.status}
                           </p>
-                          {step.current && <Badge variant="outline">Current</Badge>}
+                          {step.current && (
+                            <Badge variant="outline">Current</Badge>
+                          )}
                         </div>
                         {step.description && (
                           <p className="text-sm text-muted-foreground mt-1">
@@ -423,15 +488,13 @@ export const OrderDetailModal = ({
             </Card>
           )}
 
-
           {/* Action Buttons */}
-          <div className="flex justify-end gap-2"> {/* Container for buttons */}
+          <div className="flex justify-end gap-2">
             {orderStatus === "pending" && (
               <Button
                 onClick={() => handleStatusUpdate("confirmed")}
                 disabled={isUpdatingStatus}
-                className="flex items-center"
-              >
+                className="flex items-center">
                 {isUpdatingStatus ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />

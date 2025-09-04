@@ -1,6 +1,8 @@
 // features/brand/brandApi.ts
 import type { Brand } from "@/types";
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+type CreateBrandInput = Omit<Brand, "_id">;
+
 
 export const brandApi = createApi({
   baseQuery: fetchBaseQuery({
@@ -22,10 +24,11 @@ export const brandApi = createApi({
     getBrands: builder.query<Brand[], void>({
       query: () => "/brands",
       providesTags: (result) =>
-        result ? result.map(({ _id }) => ({ type: "Brand", id: _id })) : ["Brand"],
+        result
+          ? result.map(({ _id }) => ({ type: "Brand", id: _id }))
+          : ["Brand"],
     }),
-
-    createBrand: builder.mutation<Brand, Omit<Brand, "id">>({
+    createBrand: builder.mutation<Brand, CreateBrandInput>({
       query: (brandData) => ({
         url: "/brands",
         method: "POST",

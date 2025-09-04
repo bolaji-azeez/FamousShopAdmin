@@ -1,5 +1,3 @@
-
-
 import {
   ShoppingCart,
   Package,
@@ -18,32 +16,33 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
-import {  useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
-// Import your custom hook
-import { useDashboardData } from "@/hooks/useDashboardData"; // Hook lives here now
+import { useDashboardData } from "@/hooks/useDashboardData";
 import { fetchDashboardOverview } from "@/features/admin/adminAuthSlice";
- // Ensure this import path is correct
+
 import { useAppDispatch } from "@/hooks/hooks";
 import { useGetOrdersQuery } from "@/features/order/orderApi";
 import { useGetProductsQuery } from "@/features/products/productApi";
 import { useGetUsersQuery } from "@/features/users/userApi";
 
-
-
-
 export default function AdminDashboardPage() {
- const dispatch = useAppDispatch();
+  const dispatch = useAppDispatch();
   const navigate = useNavigate(); // <-- Move this here, before any return
 
-  const { data: ordersData = [], isLoading: ordersLoading } = useGetOrdersQuery();
-  const { data: productsData = [], isLoading: productsLoading } = useGetProductsQuery();
-  const {data: totalUser = [], isLoading: usersLoading } = useGetUsersQuery();
-  console.log(productsData, "This is product data")
-  console.log(ordersData, "This is order data")
-  console.log(totalUser, "This is users data")
+  const { data: ordersData = [], isLoading: ordersLoading } =
+    useGetOrdersQuery();
+  const { data: productsData = [], isLoading: productsLoading } =
+    useGetProductsQuery();
+  const { data: totalUser = [] } = useGetUsersQuery();
+  console.log(productsData, "This is product data");
+  console.log(ordersData, "This is order data");
+  console.log(totalUser, "This is users data");
 
-  const { dashboardData, isLoading, isSucceeded, isFailed, error } = useDashboardData();
+
+
+
+  const { dashboardData, isLoading, isFailed, error } = useDashboardData();
   // Helper to format numbers safely for display
   const formatNumber = (
     num: number | null | undefined,
@@ -82,8 +81,7 @@ export default function AdminDashboardPage() {
     );
   }
 
-
-return (
+  return (
     <div className="space-y-8">
       <div>
         <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
@@ -103,7 +101,8 @@ return (
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              ${formatNumber(dashboardData?.totalUser, '0')} {/* Corrected: Use actual data field */}
+              ${formatNumber(dashboardData?.totalUser, "0")}{" "}
+              {/* Corrected: Use actual data field */}
             </div>
             <div className="flex items-center text-xs text-green-600 mt-1">
               <TrendingUp className="h-3 w-3 mr-1" />
@@ -122,11 +121,12 @@ return (
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatNumber(ordersData.length, '0')} {/* Corrected: Use actual data field */}
+              {formatNumber(ordersData.length, "0")}{" "}
+              {/* Corrected: Use actual data field */}
             </div>
             <div className="flex items-center text-xs text-blue-600 mt-1">
               <TrendingUp className="h-3 w-3 mr-1" />
-              +180.1% from last month
+             
             </div>
           </CardContent>
           <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-blue-400/20 to-transparent rounded-bl-full" />
@@ -141,11 +141,12 @@ return (
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatNumber(productsData.length, '0')} {/* Corrected: Use actual data field */}
+              {formatNumber(productsData.length, "0")}{" "}
+              {/* Corrected: Use actual data field */}
             </div>
             <div className="flex items-center text-xs text-purple-600 mt-1">
               <TrendingUp className="h-3 w-3 mr-1" />
-              +19% from last month
+             
             </div>
           </CardContent>
           <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-purple-400/20 to-transparent rounded-bl-full" />
@@ -160,18 +161,17 @@ return (
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatNumber(totalUser.length, '0')} {/* Corrected: Use actual data field */}
+              {formatNumber(totalUser.length, "0")}{" "}
+              {/* Corrected: Use actual data field */}
             </div>
             <div className="flex items-center text-xs text-orange-600 mt-1">
               <TrendingUp className="h-3 w-3 mr-1" />
-              +201 since last month
+             
             </div>
           </CardContent>
           <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-orange-400/20 to-transparent rounded-bl-full" />
         </Card>
       </div>
-
-   
 
       {/* Recent Activity */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
@@ -191,45 +191,51 @@ return (
               View All
             </Button>
           </CardHeader>
-         <CardContent>
-    {ordersLoading ? (
-      <div>Loading orders...</div>
-    ) : ordersData.length > 0 ? (
-      ordersData.slice(0, 5).map((order) => (
-        <div key={order._id} className="flex items-center justify-between p-3 rounded-lg border bg-muted/20 mb-2">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <p className="text-sm font-medium">{order.userId?.fullName}</p>
-              <Badge
-                variant={
-                  order.status === "delivered"
-                    ? "default"
-                    : order.status === "confirmed"
-                    ? "secondary"
-                    : "outline"
-                }
-                className="text-xs">
-                {order.status}
-                         </Badge>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {order.products && order.products.length > 0
-                ? `${order.products[0].quantity} x ${order.products[0].price}`
-                : "—"}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {new Date(order.createdAt).toLocaleDateString()}
-            </p>
-          </div>
-          <div className="text-right">
-            <div className="text-sm font-bold">{order.totalPrice}</div>
-          </div>
-        </div>
-      ))
-    ) : (
-      <div className="text-muted-foreground">No recent orders data available.</div>
-    )}
-  </CardContent>
+          <CardContent>
+            {ordersLoading ? (
+              <div>Loading orders...</div>
+            ) : ordersData.length > 0 ? (
+              ordersData.slice(0, 5).map((order) => (
+                <div
+                  key={order._id}
+                  className="flex items-center justify-between p-3 rounded-lg border bg-muted/20 mb-2">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium">
+                        {order.userId?.fullName}
+                      </p>
+                      <Badge
+                        variant={
+                          order.status === "delivered"
+                            ? "default"
+                            : order.status === "confirmed"
+                            ? "secondary"
+                            : "outline"
+                        }
+                        className="text-xs">
+                        {order.status}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {order.products && order.products.length > 0
+                        ? `${order.products[0].quantity} x ${order.products[0].price}`
+                        : "—"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(order.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm font-bold">{order.totalPrice}</div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-muted-foreground">
+                No recent orders data available.
+              </div>
+            )}
+          </CardContent>
         </Card>
         {/* Top Products Card moved outside Recent Orders Card */}
         <Card className="col-span-3">
@@ -258,7 +264,13 @@ return (
                   className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors mb-2">
                   <div className="relative">
                     <img
-                      src={product.images?.[0] || "/placeholder.svg"}
+                      src={
+                        product.images && product.images.length
+                          ? (typeof product.images[0] === "string"
+                              ? product.images[0]
+                              : product.images[0]?.url) || "/placeholder.svg"
+                          : "/placeholder.svg"
+                      }
                       alt={product.name}
                       width={40}
                       height={40}
@@ -269,21 +281,24 @@ return (
                     </div>
                   </div>
                   <div className="flex-1 space-y-1">
-                    <p className="text-sm font-medium leading-none">{product.name}</p>
-                    <p className="text-sm text-muted-foreground">{product.brand}</p>
+                    <p className="text-sm font-medium leading-none">
+                      {product.name}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {product.brand}
+                    </p>
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-bold">
                         ${product.price?.toLocaleString()}
                       </span>
-                      <Badge variant="secondary" className="text-xs">
-                        {product.salesData?.sales || 0} sold
-                      </Badge>
                     </div>
                   </div>
                 </div>
               ))
             ) : (
-              <div className="text-muted-foreground">No top products data available.</div>
+              <div className="text-muted-foreground">
+                No top products data available.
+              </div>
             )}
           </CardContent>
         </Card>

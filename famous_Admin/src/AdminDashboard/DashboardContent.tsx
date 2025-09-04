@@ -1,25 +1,22 @@
-// src/components/DashboardContent.tsx
-import React from "react"; // Ensure React is imported
-import { BarChart3, ShoppingCart, Package, Tag } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"; // CardDescription added
-import type { Order } from "@/data/dashboardMock"; // Adjust path if needed
-import type { Product } from "@/types"; // Adjust path if needed
 
-// IMPORTANT: This component should NOT be calling the Redux hook.
-// It receives data as props.
+import React from "react"; 
+import { BarChart3, ShoppingCart, Package, Tag } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import type { Order } from "@/data/dashboardMock"; 
+import type { Product } from "@/types"; 
 
 interface DashboardContentProps {
-  // These props should come from the fetched dashboard data
-  totalRevenue?: string | number | null; // Example: $45,231.89 or 45231.89
-  orderCount?: string | number | null; // Example: 2350
-  productCount?: string | number | null; // Example: 12234
-  activeBrands?: string | number | null; // Example: 573
-  recentOrders?: Order[]; // Data for recent orders
-  topProducts?: Product[]; // Data for top products
-  monthlySalesData?: any[]; // Data for charts
-  salesOverviewData?: any[]; // Data for charts
-  isLoading?: boolean; // To indicate loading state
-  error?: string | null; // To display errors
+
+  totalRevenue?: string | number | null; 
+  orderCount?: string | number | null; 
+  productCount?: string | number | null; 
+  activeBrands?: string | number | null; 
+  recentOrders?: Order[]; 
+  topProducts?: Product[]; 
+  monthlySalesData?: []; 
+  salesOverviewData?: []; 
+  isLoading?: boolean; 
+  error?: string | null; 
 }
 
 export const DashboardContent: React.FC<DashboardContentProps> = ({
@@ -35,14 +32,13 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
   error
 }) => {
 
-  // Helper to format numbers safely
+  
   const formatNumber = (num: string | number | null | undefined, fallback: string = '0') => {
     if (num === null || num === undefined) return fallback;
     if (typeof num === 'number') return num.toLocaleString();
-    return num; // If it's already a string like "$45,231.89"
+    return num; 
   };
 
-  // Handle loading and error states within the component itself
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -55,12 +51,12 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
     return (
       <div className="flex flex-col items-center justify-center h-screen text-red-500">
         <p className="mb-4">Error loading dashboard: {error}</p>
-        {/* Add a retry mechanism if needed */}
+       
       </div>
     );
   }
 
-  // If data is loaded or default empty, render the content
+ 
   return (
     <div className="space-y-6">
       <div>
@@ -147,7 +143,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {/* Safely render top products, showing message if none */}
+              
               {topProducts && topProducts.length > 0 ? (
                 topProducts.slice(0, 3).map((product) => (
                   <div key={product._id} className="flex items-center">
@@ -162,7 +158,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
                       <p className="text-sm font-medium leading-none">{product.name}</p>
                       <p className="text-sm text-muted-foreground">{product.brand}</p>
                     </div>
-                    <div className="ml-auto font-medium">${product.price}</div>
+                    <div className="ml-auto font-medium">N{product.price}</div>
                   </div>
                 ))
               ) : (

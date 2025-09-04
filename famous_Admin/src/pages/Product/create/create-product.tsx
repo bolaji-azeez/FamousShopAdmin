@@ -20,7 +20,7 @@ export default function CreateProductPage() {
 
       toast.success("Product saved successfully!");
       navigate("/products");
-    } catch (err) {
+    } catch  {
       toast.error("Failed to save product");
     }
   };

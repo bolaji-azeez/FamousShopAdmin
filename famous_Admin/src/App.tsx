@@ -4,6 +4,7 @@ import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './component/ProtectedRoutes';
 import AdminLogin from './pages/auth/login';
 import AdminDashboard from './pages/Dashboard';
+import { Navigate } from 'react-router-dom';
 
 function App() {
   return (
