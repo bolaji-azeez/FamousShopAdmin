@@ -40,25 +40,24 @@ export const productApi = createApi({
     getProducts: builder.query<Product[], void>({
       query: () => "/products",
       // response is 'unknown' by default: give it a type
-      transformResponse: (response: ProductsResponse): Product[] =>
-        response.data ?? response.products ?? [],
-      providesTags: (result) =>
-        result && result.length
-          ? [
-              { type: "Product" as const, id: "LIST" },
-              ...result.map((p) => ({ type: "Product" as const, id: p._id })),
-            ]
-          : [{ type: "Product" as const, id: "LIST" }],
+      transformResponse: (response: ProductsResponse): Product[] => {
+        const list = response.data ?? response.products ?? [];
+        return list.map((p: any) => ({
+          ...p,
+          brand: typeof p.brand === "string" ? p.brand : p.brand?._id ?? "",
+        }));
+      },
     }),
 
     getProductById: builder.query<Product, string>({
       query: (id) => `/products/${id}`,
-      transformResponse: (response: ProductResponse): Product =>
-        response.data ?? response.product as Product,
-      providesTags: (_res, _err, id) => [
-        { type: "Product" as const, id },
-        { type: "Product" as const, id: "LIST" },
-      ],
+      transformResponse: (response: ProductResponse): Product => {
+        const p: any = response.data ?? response.product ?? {};
+        return {
+          ...p,
+          brand: typeof p.brand === "string" ? p.brand : p.brand?._id ?? "",
+        } as Product;
+      },
     }),
 
     createProduct: builder.mutation<Product, CreateProductArg>({

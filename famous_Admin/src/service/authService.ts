@@ -12,19 +12,17 @@ interface User {
   name: string;
 }
 
-interface AuthResponse {
-  user: User;
-  token: string;
-}
+
 
 // Success response for password change might just be a message or empty
 interface PasswordChangeResponse {
   message: string; // Or whatever your API returns for success
 }
 
-export const login = async (
-  credentials: LoginCredentials
-): Promise<AuthResponse> => {
+export type ApiUser = { _id: string; name?: string; email?: string };
+export type AuthResponse = { token: string; user: ApiUser };
+
+export async function login(credentials: LoginCredentials): Promise<AuthResponse> {
   const response = await api.post<AuthResponse>(
     "/auth/admin/login",
     credentials

@@ -16,8 +16,6 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableHead,
-  TableHeader,
   TableRow,
 } from "@/components/ui/table";
 import {
@@ -48,6 +46,20 @@ export default function BrandsPage() {
     isError,
     error,
   } = useGetBrandsQuery();
+  const rawBrands = getBrands ?? [];
+
+  const rows = rawBrands.map((b) => ({
+    id: String(b._id ?? ""), // key-safe
+    name: String(b.name ?? ""),
+    // coerce productsCount to number
+    productsCount:
+      typeof (b as any).productsCount === "number"
+        ? (b as any).productsCount
+        : 0,
+    // coerce status to a string, default to "active"
+    status:
+      typeof (b as any).status === "string" ? (b as any).status : "active",
+  }));
   const [createBrand, { isLoading: isCreating }] = useCreateBrandMutation();
   const [deleteBrand] = useDeleteBrandMutation();
   const [brandName, setBrandName] = useState("");
@@ -144,25 +156,17 @@ export default function BrandsPage() {
           </p>
         )}
         <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Brand Name</TableHead>
-              <TableHead>Products</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
           <TableBody>
-            {getBrands.map((brand) => (
-              <TableRow key={brand._id}>
+            {rows.map((brand) => (
+              <TableRow key={brand.id}>
                 <TableCell className="font-medium">{brand.name}</TableCell>
-                <TableCell>{brand.productsCount || 0} products</TableCell>
+                <TableCell>{brand.productsCount} products</TableCell>
                 <TableCell>
                   <Badge
                     variant={
                       brand.status === "active" ? "default" : "secondary"
                     }>
-                    {brand.status || "active"}
+                    {brand.status}
                   </Badge>
                 </TableCell>
                 <TableCell>
@@ -173,7 +177,7 @@ export default function BrandsPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleDeleteBrand(brand._id)}>
+                      onClick={() => handleDeleteBrand(brand.id)}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
@@ -181,6 +185,8 @@ export default function BrandsPage() {
               </TableRow>
             ))}
           </TableBody>
+
+       
         </Table>
       </Card>
     </div>

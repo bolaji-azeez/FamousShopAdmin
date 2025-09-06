@@ -21,7 +21,8 @@ const AdminLogin = () => {
   const navigate = useNavigate();
 
   const dispatch = useAppDispatch();
-  const { loading, error } = useAppSelector((state) => state.adminAuth);
+ const { status, error } = useAppSelector(s => s.adminAuth);
+ const loading = status === "loading";
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;

@@ -285,7 +285,7 @@ export default function AdminDashboardPage() {
                       {product.name}
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      {product.brand}
+                     {typeof product.brand === 'string' ? product.brand : product.brand.name}
                     </p>
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-bold">
