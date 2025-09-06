@@ -2,19 +2,16 @@
 import type { Brand } from "@/types";
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 type CreateBrandInput = Omit<Brand, "_id">;
-
+import type { RootState } from "@/store/store";
 
 export const brandApi = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl: import.meta.env.VITE_APP_API_BASE_URL,
     prepareHeaders: (headers, { getState }) => {
-      const token = getState().adminAuth.token; //
-
-      console.log(token); // Adjust based on your auth state
-      if (token) {
-        headers.set("Authorization", `Bearer ${token}`);
-      }
+      const token = (getState() as RootState).adminAuth.token; // ← cast
+      if (token) headers.set("authorization", `Bearer ${token}`);
       return headers;
+      console.log(token); // Adjust based on your auth state
     },
   }),
 

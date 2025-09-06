@@ -2,6 +2,7 @@
 import { createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { AxiosError } from "axios";
 import { login } from "../../service/authService";
+import type { ApiUser } from "../../service/authService";
 import apiClient from "@/lib/axios";
 
 interface DashboardData {
@@ -13,7 +14,7 @@ interface DashboardData {
 }
 
 interface AuthState {
-  user: string | null;
+  user: ApiUser | null;
   token: string | null;
   status: "idle" | "loading" | "succeeded" | "failed";
   loading: boolean;
@@ -27,7 +28,7 @@ export interface RootState {
 }
 
 const initialState: AuthState = {
-  user: null,
+  user:null,
   token: null,
   status: "idle",
   loading: false,
@@ -48,7 +49,7 @@ export interface LoginCredentials {
 
 export interface LoginSuccess {
   token: string;
-  user: string; // adjust if your API returns more
+  user: ApiUser | null; // adjust if your API returns more
 }
 
 export interface ChangePasswordData {
@@ -60,6 +61,8 @@ export interface ChangePasswordResponse {
   message?: string;
   token?: string; 
 }
+
+
 
 const getAxiosMessage = (err: unknown, fallback = "Request failed") => {
   const ax = err as AxiosError<{ message?: string }>;
@@ -149,8 +152,9 @@ const authSlice = createSlice({
       .addCase(loginAdmin.fulfilled, (state, action: PayloadAction<LoginSuccess>) => {
         state.status = "succeeded";
         state.token = action.payload.token;
-        if (action.payload.user) state.user = action.payload.user;
-        state.error = null;
+        if (action.payload.user) {
+        state.user = action.payload.user
+}
       })
       .addCase(loginAdmin.rejected, (state, action) => {
         state.status = "failed";

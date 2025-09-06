@@ -43,6 +43,19 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { Product } from "@/types";
 
+type BrandLike = string | { _id: string; name?: string } | null | undefined;
+
+const brandIdOf = (brand: BrandLike): string =>
+  typeof brand === "string" ? brand : brand?._id ?? "";
+
+const brandNameOf = (
+  brand: BrandLike,
+  allBrands: Array<{ _id: string; name: string }>
+): string =>
+  typeof brand === "string"
+    ? allBrands.find((b) => b._id === brand)?.name ?? ""
+    : brand?.name ?? "";
+
 export default function ProductsPage() {
   const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -80,10 +93,11 @@ export default function ProductsPage() {
     formData.append("description", description);
 
     const featureList = features
-      .split(",")
+      .split(/[,;\n•]/g) // split by comma, semicolon, newline, bullets
       .map((f) => f.trim())
       .filter(Boolean);
-    featureList.forEach((f) => formData.append("features", f));
+
+    formData.append("features", JSON.stringify(featureList));
 
     images.forEach((url) => formData.append("existingImageUrls", url));
     imageFiles.forEach((file) => formData.append("images", file));
@@ -119,7 +133,7 @@ export default function ProductsPage() {
       .toLowerCase()
       .includes(searchTerm.toLowerCase());
     const brandMatch =
-      selectedBrand === "all" || product.brand === selectedBrand;
+      selectedBrand === "all" || brandIdOf(product.brand) === selectedBrand;
     return nameMatch && brandMatch;
   });
 
@@ -144,7 +158,7 @@ export default function ProductsPage() {
   React.useEffect(() => {
     if (editingProduct) {
       setProductName(editingProduct.name);
-      setSelectedBrand(editingProduct.brand);
+      setSelectedBrand(brandIdOf(editingProduct.brand));
       setPrice(editingProduct.price.toString());
       setQuantity(editingProduct.quantity?.toString() || "");
       setDescription(editingProduct.description);
@@ -250,6 +264,7 @@ export default function ProductsPage() {
                 />
               </div>
               <ImageUploader
+                multiple // ✅ allow multiple files
                 images={images}
                 onImagesChange={handleImagesChange}
                 onFilesChange={handleFilesChange}
@@ -299,8 +314,7 @@ export default function ProductsPage() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <Badge variant="outline">
-                  {brands.find((b) => b._id === product.brand)?.name ||
-                    product.brand}
+                  {brandNameOf(product.brand, brands) || "—"}
                 </Badge>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>

@@ -45,19 +45,11 @@ type TimelineStep = {
 
 type OrderProduct = {
   _id: string;
-  productId: {
-    _id: string;
-    name: string;
-  };
-  price: number;
+  productId?: string | { _id: string; name?: string } | null;
+  name?: string; // snapshot for guests
+  price?: number;
+  unitPrice?: number;
   quantity: number;
-};
-
-type OrderUser = {
-  _id: string;
-  fullName: string;
-  email: string;
-  phoneNumber?: number;
 };
 
 type ShippingAddress = {
@@ -83,7 +75,17 @@ type FullOrder = {
   totalPrice: number;
   createdAt: string;
   updatedAt: string;
-  userId: OrderUser;
+  userId?: {
+    _id: string;
+    fullName?: string;
+    email?: string;
+    phoneNumber?: string;
+  };
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  address?: string;
+  city?: string; // 👈 guest fields
   products: OrderProduct[];
   timeline: TimelineStep[];
   shippingAddress?: ShippingAddress;
@@ -117,7 +119,7 @@ export const OrderDetailModal = ({
     isError,
     error,
   } = useGetOrderByIdQuery(orderId as string, {
-    skip: !isOpen || !orderId, 
+    skip: !isOpen || !orderId,
     refetchOnMountOrArgChange: true,
   });
 
@@ -133,7 +135,7 @@ export const OrderDetailModal = ({
       _id: "",
       fullName: "Unknown Customer",
       email: "No email provided",
-      phoneNumber: 0,
+      phoneNumber: "",
     },
     products: [],
     timeline: [],
@@ -228,9 +230,7 @@ export const OrderDetailModal = ({
     );
   }
 
-  
   if (orderDetails) {
-   
     console.log(orderDetails, "This is order details");
   }
 
@@ -239,10 +239,18 @@ export const OrderDetailModal = ({
   const orderDate = fullOrderDetails.createdAt
     ? new Date(fullOrderDetails.createdAt).toLocaleDateString()
     : "Unknown date";
-  const userFullName = fullOrderDetails.userId?.fullName || "Unknown Customer";
-  const userEmail = fullOrderDetails.userId?.email || "No email provided";
-  const userPhoneNumber =
-    fullOrderDetails.userId?.phoneNumber || "No phone provided";
+  const userFullName =
+    fullOrderDetails.userId?.fullName ||
+    [fullOrderDetails.firstName, fullOrderDetails.lastName]
+      .filter(Boolean)
+      .join(" ") ||
+    "Unknown Customer";
+
+  const userEmail =
+    fullOrderDetails.userId?.email ||
+    fullOrderDetails.email ||
+    "No email provided";
+
   const shippingAddress = fullOrderDetails.shippingAddress;
   const shipping = fullOrderDetails.shipping;
   const orderProducts = fullOrderDetails.products || [];
@@ -306,9 +314,7 @@ export const OrderDetailModal = ({
                 <div>
                   <p className="font-semibold">{userFullName}</p>
                   <p className="text-sm text-muted-foreground">{userEmail}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {userPhoneNumber}
-                  </p>
+                  
                 </div>
               </div>
             </CardContent>
@@ -393,28 +399,29 @@ export const OrderDetailModal = ({
             <CardContent>
               <div className="space-y-4">
                 {orderProducts.map((item) => {
-                  if (!item || !item.productId) return null;
-                  const itemPrice = item.price || 0;
-                  const itemQuantity = item.quantity || 0;
-                  const itemTotal = itemPrice * itemQuantity;
+                  const title =
+                    (typeof item.productId === "object" &&
+                      item.productId?.name) ||
+                    item.name ||
+                    "Item";
+
+                  const unit = item.unitPrice ?? item.price ?? 0;
+                  const qty = item.quantity ?? 0;
+                  const line = unit * qty;
 
                   return (
                     <div
                       key={item._id}
                       className="flex items-center gap-4 p-4 border rounded-lg">
                       <div className="flex-1">
-                        <h4 className="font-semibold">
-                          {item.productId.name || "Unknown Product"}
-                        </h4>
+                        <h4 className="font-semibold">{title}</h4>
                         <div className="flex items-center gap-4 mt-2">
-                          <span className="text-sm">Qty: {itemQuantity}</span>
-                          <span className="text-sm">
-                            Price: {ngn(itemPrice)}
-                          </span>
+                          <span className="text-sm">Qty: {qty}</span>
+                          <span className="text-sm">Price: {ngn(unit)}</span>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-bold text-lg">{ngn(itemTotal)}</p>
+                        <p className="font-bold text-lg">{ngn(line)}</p>
                       </div>
                     </div>
                   );

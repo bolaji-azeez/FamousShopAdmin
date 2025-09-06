@@ -4,24 +4,17 @@ export interface ProductImage {
   id?: string;
 }
 
-export interface Product {
+export type Product = {
   _id: string;
   name: string;
-  productId: number;
-  description: string;
   price: number;
-  brand: string;
-  images: ProductImage[];       
-  quantity: number;
-  salesData?: string;
-  features: string[];
-  status: "active" | "draft" | "archived";
-  createdAt: string;
-  updatedAt?: string;
-  __v: number;
-}
-
-
+  description: string;
+  quantity?: number;
+  images?: { url: string }[];
+  features?: string[];
+  status?: "active" | "inactive";
+  brand: string | { _id: string; name: string };
+};
 
 export type ProductTableItem = Pick<
   Product,
@@ -37,12 +30,8 @@ export interface ApiResponse<T> {
   data: T;
   message?: string;
   success: boolean;
-   user: User;   
+  user: User;
 }
-
-
-
-
 
 export interface Brand {
   _id: string;
@@ -214,13 +203,12 @@ export type TimelineStep = {
   current?: boolean;
 };
 
-export type OrderProduct = {
+type OrderProduct = {
   _id: string;
-  productId: {
-    _id: string;
-    name: string;
-  };
-  price: number;
+  productId?: string | { _id: string; name?: string } | null;
+  name?: string; // snapshot for guests
+  price?: number;
+  unitPrice?: number;
   quantity: number;
 };
 
@@ -268,4 +256,5 @@ export type OrderModalProps = {
   orderId: string;
 };
 
-
+export type LoginSuccess = { token: string; user: string }; 
+export type ApiUser = { _id: string; name?: string; email?: string };

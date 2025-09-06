@@ -1,15 +1,14 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import type { Notification } from "@/types";
+import type { RootState } from "@/store/store";
 
 export const notificationApi = createApi({
   reducerPath: "notificationApi",
   baseQuery: fetchBaseQuery({
     baseUrl: import.meta.env.VITE_APP_API_BASE_URL,
     prepareHeaders: (headers, { getState }) => {
-      const token = getState().adminAuth.token; // Adjust based on your auth state
-      if (token) {
-        headers.set("Authorization", `Bearer ${token}`);
-      }
+      const token = (getState() as RootState).adminAuth.token; // ← cast
+      if (token) headers.set("authorization", `Bearer ${token}`);
       return headers;
     },
   }),
